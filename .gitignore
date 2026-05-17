@@ -1,0 +1,43 @@
+# Unity generated folders
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+MemoryCaptures/
+UserSettings/
+
+# Visual Studio / Rider generated files
+*.csproj
+*.sln
+*.slnx
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# Unity generated metadata for IDEs
+.vs/
+.idea/
+.gradle/
+ExportedObj/
+consulo/
+
+# OS / editor noise
+*.tmp
+*.bak
+*.swp
+*.orig
+Thumbs.db
+Desktop.ini
+
+# VS Code workspace settings
+.vscode/*
+!.vscode/extensions.json
+
