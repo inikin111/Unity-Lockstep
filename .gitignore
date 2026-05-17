@@ -21,6 +21,8 @@ UserSettings/
 *.mdb
 *.opendb
 *.VC.db
+bin/
+obj/
 
 # Unity generated metadata for IDEs
 .vs/
@@ -40,4 +42,3 @@ Desktop.ini
 # VS Code workspace settings
 .vscode/*
 !.vscode/extensions.json
-
