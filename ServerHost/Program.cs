@@ -2,7 +2,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
-using Lockstep.Network;
+using Lockstep.Packets;
 
 public static class Program
 {
@@ -88,7 +88,7 @@ public static class Program
                 continue;
             }
 
-            Console.WriteLine($"Receive input from {remote.Address}:{remote.Port}, clientId={packet.clientId}, tick={packet.tick}, input={packet.input}");
+            Console.WriteLine($"Receive input from {remote.Address}:{remote.Port}, clientId={packet.clientId}, tick={packet.tick}, input={packet.inputPos}");
 
             clients[packet.clientId] = new IPEndPoint(remote.Address, remote.Port);
             CacheInput(inputsByTick, packet);
@@ -97,12 +97,12 @@ public static class Program
 
     static void SendConnectionResponse(UdpClient server, IPEndPoint remote, uint clientId)
     {
-        ConnectionPacket responsePacket = new ConnectionPacket
+        RequestPacket responsePacket = new RequestPacket
         {
             clientId = clientId
         };
 
-        byte[] responseData = PacketCodec.ConnectionPacketToBytes(responsePacket);
+        byte[] responseData = PacketCodec.RequestPacketToBytes(responsePacket);
         server.Send(responseData, responseData.Length, remote);
     }
 

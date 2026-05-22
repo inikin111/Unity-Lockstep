@@ -1,21 +1,30 @@
 using System;
 using System.Text;
 
-namespace Lockstep.Network
+namespace Lockstep.Packets
 {
     public static class PacketCodec
     {
-        private const int InputPacketByteLength = sizeof(uint) * 3;
+        private const int InputPacketByteLength = sizeof(bool) + sizeof(uint) + sizeof(uint) + sizeof(int) * 3;
         private const int FramePacketHeaderByteLength = sizeof(uint) * 2;
-        private const int ConnectionPacketByteLength = sizeof(uint);
+        private const int RequestPacketByteLength = sizeof(uint);
 
         public static byte[] InputPacketToBytes(InputPacket packet)
         {
             byte[] bytes = new byte[InputPacketByteLength];
 
-            Buffer.BlockCopy(BitConverter.GetBytes(packet.clientId), 0, bytes, 0, sizeof(uint));
-            Buffer.BlockCopy(BitConverter.GetBytes(packet.tick), 0, bytes, sizeof(uint), sizeof(uint));
-            Buffer.BlockCopy(BitConverter.GetBytes((int)packet.input), 0, bytes, sizeof(uint) * 2, sizeof(uint));
+            int offset = 0;
+            Buffer.BlockCopy(BitConverter.GetBytes(packet.isValid), 0, bytes, offset, sizeof(bool));
+            offset += sizeof(bool);
+            Buffer.BlockCopy(BitConverter.GetBytes(packet.clientId), 0, bytes, offset, sizeof(uint));
+            offset += sizeof(uint);
+            Buffer.BlockCopy(BitConverter.GetBytes(packet.tick), 0, bytes, offset, sizeof(uint));
+            offset += sizeof(uint);
+            Buffer.BlockCopy(BitConverter.GetBytes(packet.inputPos.x), 0, bytes, offset, sizeof(int));
+            offset += sizeof(int);
+            Buffer.BlockCopy(BitConverter.GetBytes(packet.inputPos.y), 0, bytes, offset, sizeof(int));
+            offset += sizeof(int);
+            Buffer.BlockCopy(BitConverter.GetBytes(packet.inputPos.z), 0, bytes, offset, sizeof(int));
 
             return bytes;
         }
@@ -34,9 +43,15 @@ namespace Lockstep.Network
 
             return new InputPacket
             {
-                clientId = BitConverter.ToUInt32(bytes, 0),
-                tick = BitConverter.ToUInt32(bytes, sizeof(uint)),
-                input = (InputType)BitConverter.ToInt32(bytes, sizeof(uint) * 2)
+                isValid = BitConverter.ToBoolean(bytes, 0),
+                clientId = BitConverter.ToUInt32(bytes, sizeof(bool)),
+                tick = BitConverter.ToUInt32(bytes, sizeof(bool) + sizeof(uint)),
+                inputPos = new InputPosition
+                {
+                    x = BitConverter.ToInt32(bytes, sizeof(bool) + sizeof(uint) + sizeof(uint)),
+                    y = BitConverter.ToInt32(bytes, sizeof(bool) + sizeof(uint) + sizeof(uint) + sizeof(int)),
+                    z = BitConverter.ToInt32(bytes, sizeof(bool) + sizeof(uint) + sizeof(uint) + sizeof(int) * 2)
+                }
             };
         }
 
@@ -60,28 +75,28 @@ namespace Lockstep.Network
             return Encoding.UTF8.GetString(bytes);
         }
 
-        public static byte[] ConnectionPacketToBytes(ConnectionPacket packet)
+        public static byte[] RequestPacketToBytes(RequestPacket packet)
         {
-            byte[] bytes = new byte[ConnectionPacketByteLength];
+            byte[] bytes = new byte[RequestPacketByteLength];
 
             Buffer.BlockCopy(BitConverter.GetBytes(packet.clientId), 0, bytes, 0, sizeof(uint));
 
             return bytes;
         }
 
-        public static ConnectionPacket BytesToConnectionPacket(byte[] bytes)
+        public static RequestPacket BytesToRequestPacket(byte[] bytes)
         {
             if (bytes == null)
             {
                 throw new ArgumentNullException(nameof(bytes));
             }
 
-            if (bytes.Length < ConnectionPacketByteLength)
+            if (bytes.Length < RequestPacketByteLength)
             {
-                throw new ArgumentException($"ConnectionPacket data must be at least {ConnectionPacketByteLength} bytes.", nameof(bytes));
+                throw new ArgumentException($"RequestPacket data must be at least {RequestPacketByteLength} bytes.", nameof(bytes));
             }
 
-            return new ConnectionPacket
+            return new RequestPacket
             {
                 clientId = BitConverter.ToUInt32(bytes, 0)
             };
@@ -98,9 +113,18 @@ namespace Lockstep.Network
             for (int i = 0; i < inputs.Length; i++)
             {
                 int offset = FramePacketHeaderByteLength + i * InputPacketByteLength;
-                Buffer.BlockCopy(BitConverter.GetBytes(inputs[i].clientId), 0, bytes, offset, sizeof(uint));
-                Buffer.BlockCopy(BitConverter.GetBytes(inputs[i].tick), 0, bytes, offset + sizeof(uint), sizeof(uint));
-                Buffer.BlockCopy(BitConverter.GetBytes((int)inputs[i].input), 0, bytes, offset + sizeof(uint) * 2, sizeof(uint));
+                int inner = offset;
+                Buffer.BlockCopy(BitConverter.GetBytes(inputs[i].isValid), 0, bytes, inner, sizeof(bool));
+                inner += sizeof(bool);
+                Buffer.BlockCopy(BitConverter.GetBytes(inputs[i].clientId), 0, bytes, inner, sizeof(uint));
+                inner += sizeof(uint);
+                Buffer.BlockCopy(BitConverter.GetBytes(inputs[i].tick), 0, bytes, inner, sizeof(uint));
+                inner += sizeof(uint);
+                Buffer.BlockCopy(BitConverter.GetBytes(inputs[i].inputPos.x), 0, bytes, inner, sizeof(int));
+                inner += sizeof(int);
+                Buffer.BlockCopy(BitConverter.GetBytes(inputs[i].inputPos.y), 0, bytes, inner, sizeof(int));
+                inner += sizeof(int);
+                Buffer.BlockCopy(BitConverter.GetBytes(inputs[i].inputPos.z), 0, bytes, inner, sizeof(int));
             }
 
             return bytes;
@@ -133,9 +157,15 @@ namespace Lockstep.Network
                 int offset = FramePacketHeaderByteLength + i * InputPacketByteLength;
                 inputs[i] = new InputPacket
                 {
-                    clientId = BitConverter.ToUInt32(bytes, offset),
-                    tick = BitConverter.ToUInt32(bytes, offset + sizeof(uint)),
-                    input = (InputType)BitConverter.ToInt32(bytes, offset + sizeof(uint) * 2)
+                    isValid = BitConverter.ToBoolean(bytes, offset),
+                    clientId = BitConverter.ToUInt32(bytes, offset + sizeof(bool)),
+                    tick = BitConverter.ToUInt32(bytes, offset + sizeof(bool) + sizeof(uint)),
+                    inputPos = new InputPosition
+                    {
+                        x = BitConverter.ToInt32(bytes, offset + sizeof(bool) + sizeof(uint) + sizeof(uint)),
+                        y = BitConverter.ToInt32(bytes, offset + sizeof(bool) + sizeof(uint) + sizeof(uint) + sizeof(int)),
+                        z = BitConverter.ToInt32(bytes, offset + sizeof(bool) + sizeof(uint) + sizeof(uint) + sizeof(int) * 2)
+                    }
                 };
             }
 

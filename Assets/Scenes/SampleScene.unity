@@ -189,6 +189,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: db759585a6340504d931dcd2f5863a79, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ClientTickScheduler
+  accumulatedTime: 0
 --- !u!1 &126013198
 GameObject:
   m_ObjectHideFlags: 0
@@ -201,7 +202,7 @@ GameObject:
   - component: {fileID: 126013201}
   - component: {fileID: 126013200}
   - component: {fileID: 126013199}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Plane
   m_TagString: Untagged
   m_Icon: {fileID: 0}

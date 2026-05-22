@@ -1,97 +1,49 @@
 using UnityEngine;
 using System.Net;
 using System.Net.Sockets;
-using Lockstep.Network;
+using Lockstep.Packets;
 
-public class Client : MonoBehaviour
+public class Client : MonoSingleton<Client>
 {
     InputManager inputManager => GetComponent<InputManager>();
-    ClientTickScheduler tickScheduler => GetComponent<ClientTickScheduler>();
+    // TickScheduler tickScheduler => GetComponent<TickScheduler>();
+
+    readonly ClientNetwork clientNetwork = new ClientNetwork();
+    readonly Simulator simulator = new Simulator();
+    const double fixedTimeStepSeconds = 1.0 / 30.0; // 30 ticks per second
+    double accumulatedTime = 0.0;
     uint currentInputTick = 0;
     uint assignedClientId = 0;
-    bool isConnected = false;
-    UdpClient client;
+
+    public FramePacket latestFramePacket;
     
     void Start()
     {
-        client = new UdpClient();
-        client.Connect("127.0.0.1", 5478);
-        Debug.Log("Client UDP socket initialized, target=127.0.0.1:5478");
-        SendConnectionPacket();
+        while (!clientNetwork.Initialize((uint id) => {assignedClientId = id;})) {}
     }
 
     void Update()
     {
-        if (!isConnected)
+        accumulatedTime += Time.deltaTime;
+        while (accumulatedTime >= fixedTimeStepSeconds)
         {
-            ReceiveConnectionPacket();
-            return;
-        }
+            clientNetwork.SendInputPacket(CreateInputPacket());
+            latestFramePacket = clientNetwork.ReceiveFramePacket();
+            simulator.StartSimulates(latestFramePacket);
 
-        tickScheduler.Tick();
+            accumulatedTime -= fixedTimeStepSeconds;
+        }
     }
 
-    public void SendInputPacket()
+    InputPacket CreateInputPacket()
     {
-        InputPacket packet = new InputPacket
+        InputPosition inputPosition = inputManager.ReadInput();
+        return new InputPacket
         {
+            isValid = true,
             clientId = assignedClientId,
-            tick = currentInputTick,
-            input = inputManager.ReadInput()
+            tick = currentInputTick++,
+            inputPos = inputPosition
         };
-        byte[] data = PacketCodec.InputPacketToBytes(packet);
-        client.Send(data, data.Length);
-    
-        currentInputTick++;
-
-        // Debug.Log($"Send input tick={packet.tick}, input={packet.input}");
-    }
-
-    public void SendConnectionPacket()
-    {
-        ConnectionPacket packet = new ConnectionPacket
-        {
-            clientId = 0 // Client ID will be assigned by server
-        };
-        byte[] data = PacketCodec.ConnectionPacketToBytes(packet);
-        client.Send(data, data.Length);
-        Debug.Log("Send connection packet");
-    }
-
-    void ReceiveConnectionPacket()
-    {
-        if (isConnected) 
-            return;
-        int availableBytes = client.Available;
-        while (availableBytes > 0)
-        {
-            IPEndPoint remote = new IPEndPoint(IPAddress.Any, 0);
-            byte[] data = client.Receive(ref remote);
-            availableBytes -= data.Length;
-
-            if (data.Length != sizeof(uint))
-            {
-                continue;
-            }
-
-            ConnectionPacket packet = PacketCodec.BytesToConnectionPacket(data);
-            assignedClientId = packet.clientId;
-            isConnected = true;
-
-            Debug.Log($"Receive connection packet, assignedClientId={assignedClientId}");
-        }
-    }
-
-    public void ReceiveFramePacket()
-    {
-        int availableBytes = client.Available;
-        while (availableBytes > 0)
-        {
-            IPEndPoint remote = new IPEndPoint(IPAddress.Any, 0);
-            byte[] data = client.Receive(ref remote);
-            availableBytes -= data.Length;
-            FramePacket framePacket = PacketCodec.BytesToFramePacket(data);
-            Debug.Log($"Receive frame tick={framePacket.tick}, inputCount={framePacket.inputs.Length}");
-        }
     }
 }
