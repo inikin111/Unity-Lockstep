@@ -5,10 +5,10 @@ public class Client : MonoSingleton<Client>
 {
     InputManager inputManager => GetComponent<InputManager>();
     // TickScheduler tickScheduler => GetComponent<TickScheduler>();
-
+    Vector3 Pos => gameObject.transform.position;
     readonly ClientNetwork clientNetwork = new ClientNetwork();
     readonly Simulator simulator = new Simulator();
-    const double fixedTimeStepSeconds = 1.0 / 30.0; // 30 ticks per second
+    const double FixedTimeStepSeconds = 1.0 / 30.0; // 30 ticks per second
     double accumulatedTime = 0.0;
     uint currentInputTick = 0;
     uint assignedClientId = 0;
@@ -17,16 +17,16 @@ public class Client : MonoSingleton<Client>
     
     void Update()
     {
-        if (!clientNetwork.Initialize((uint id) => {assignedClientId = id;})) { return; }
+        if (!clientNetwork.Initialize(OnResponseReceived)) { return; }
 
         accumulatedTime += Time.deltaTime;
-        while (accumulatedTime >= fixedTimeStepSeconds)
+        while (accumulatedTime >= FixedTimeStepSeconds)
         {
             clientNetwork.SendLocalInput(CreateInputPacket());
             latestFramePacket = clientNetwork.ReceiveFramePacket();
             simulator.StartSimulates(latestFramePacket);
 
-            accumulatedTime -= fixedTimeStepSeconds;
+            accumulatedTime -= FixedTimeStepSeconds;
         }
     }
 
@@ -50,5 +50,17 @@ public class Client : MonoSingleton<Client>
             inputPos = inputPosition,
             commandType = CommandType.Move
         };
+    }
+
+    void OnResponseReceived(uint uid)
+    {
+        assignedClientId = uid;
+        simulator.SetPlayerState(clientId:          assignedClientId,
+                                 commandType:       CommandType.None,
+                                 targetPosition:    new Position { x = 0, y = 0, z = 0 },
+                                 localPosition:     new Position { x = Mathf.RoundToInt(Pos.x * 1000),
+                                                                   y = Mathf.RoundToInt(Pos.y * 1000),
+                                                                   z = Mathf.RoundToInt(Pos.z * 1000)}
+        );
     }
 }

@@ -34,7 +34,7 @@ public class InputManager : MonoBehaviour
             if (Physics.Raycast(ray, out RaycastHit hit, Mathf.Infinity, groundLayerMask))
             {
                 Vector3 clickPosition = hit.point;
-                currentInput = new Lockstep.Packets.Position
+                currentInput = new Position
                 {
                     x = Mathf.RoundToInt(clickPosition.x * 1000),
                     y = Mathf.RoundToInt(clickPosition.y * 1000),
