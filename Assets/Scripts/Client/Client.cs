@@ -57,7 +57,7 @@ public class Client : MonoSingleton<Client>
         assignedClientId = uid;
         simulator.SetPlayerState(clientId:          assignedClientId,
                                  commandType:       CommandType.None,
-                                 targetPosition:    new Position { x = 0, y = 0, z = 0 },
+                                 targetPosition:    default,
                                  localPosition:     new Position { x = Mathf.RoundToInt(Pos.x * 1000),
                                                                    y = Mathf.RoundToInt(Pos.y * 1000),
                                                                    z = Mathf.RoundToInt(Pos.z * 1000)}

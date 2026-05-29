@@ -5,6 +5,7 @@ namespace Lockstep.Packets
     public enum CommandType : byte
     {
         Move,
+        Cancel,
         None
     }
 

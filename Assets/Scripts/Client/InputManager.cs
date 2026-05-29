@@ -6,12 +6,11 @@ public class InputManager : MonoBehaviour
 {
     public bool HasInput() => hasInput;
     bool hasInput = false;
-    public Lockstep.Packets.Position currentInput;
+    public Position currentInput;
     Vector3 pos => transform.position;
     int groundLayerMask = 1 << 3;
 
-    // Make sure to call this method only when HasInput() returns true to avoid reading stale input
-    public bool ReadInput(out Lockstep.Packets.Position inputPos)
+    public bool ReadInput(out Position inputPos)
     {
         if (hasInput)
         {
