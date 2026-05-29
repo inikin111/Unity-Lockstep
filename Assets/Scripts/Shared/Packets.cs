@@ -1,17 +1,25 @@
-using UnityEngine;
+using System.Runtime.InteropServices;
 
 namespace Lockstep.Packets
 {
+    public enum CommandType : byte
+    {
+        Move,
+        None
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
     // Clients send this to server
     public struct InputPacket
     {
-        public bool isValid;
         public uint clientId;
         public uint tick;
         public InputPosition inputPos;
+        public CommandType commandType;
     }
 
     // Server sends this to clients
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public struct FramePacket
     {
         public uint tick;
@@ -19,21 +27,16 @@ namespace Lockstep.Packets
     }
 
     // Clients <---connection establish---> Server
-    public struct RequestPacket
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public struct ACKPacket
     {
         public uint clientId;
     }
 
     // Client input
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public struct InputPosition
     {
-        public InputPosition(int x, int y, int z)
-        {
-            this.x = x;
-            this.y = y;
-            this.z = z;
-        }
-        
         public int x;
         public int y;
         public int z;
