@@ -8,6 +8,7 @@ public class ClientNetwork
     const string ServerIP = "127.0.0.1";
     const int ServerPort = 5478;
     UdpClient server;
+    IPEndPoint receiveEndPoint = new IPEndPoint(IPAddress.Any, 0);
     Action<uint> onClientIdAssigned;
 
     public bool Initialize(Action<uint> onClientIdAssigned)
@@ -28,21 +29,22 @@ public class ClientNetwork
 
     void SendConnectionRequest()
     {
-        RequestPacket packet = new RequestPacket
+        ACKPacket packet = new ACKPacket
         {
             clientId = 0 // Client ID will be assigned by server
         };
-        byte[] data = PacketCodec.RequestPacketToBytes(packet);
+        byte[] data = PacketCodec.ACKPacketToBytes(packet);
         server.Send(data, data.Length);
     }
 
     void ReceiveConnectionResponse()
     {
-        IPEndPoint remote = new IPEndPoint(IPAddress.Any, 0);
+        IPEndPoint remote = receiveEndPoint;
         byte[] data = server.Receive(ref remote);
+        receiveEndPoint = remote;
         if (data.Length > 0)
         {
-            RequestPacket responsePacket = PacketCodec.BytesToRequestPacket(data);
+            ACKPacket responsePacket = PacketCodec.BytesToACKPacket(data);
             uint assignedClientId = responsePacket.clientId;
             onClientIdAssigned?.Invoke(assignedClientId);
         }
@@ -50,8 +52,9 @@ public class ClientNetwork
 
     public FramePacket ReceiveFramePacket()
     {
-        IPEndPoint remote = new IPEndPoint(IPAddress.Any, 0);
+        IPEndPoint remote = receiveEndPoint;
         byte[] data = server.Receive(ref remote);
+        receiveEndPoint = remote;
         if (data.Length > 0)
         {
             FramePacket framePacket = PacketCodec.BytesToFramePacket(data);
@@ -60,7 +63,7 @@ public class ClientNetwork
         return default;
     }
 
-    public void SendInputPacket(InputPacket input)
+    public void SendLocalInput(InputPacket input)
     {
         byte[] data = PacketCodec.InputPacketToBytes(input);
         server.Send(data, data.Length);

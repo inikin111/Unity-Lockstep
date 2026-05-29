@@ -5,9 +5,9 @@ namespace Lockstep.Packets
 {
     public static class PacketCodec
     {
-        private const int InputPacketByteLength = (sizeof(uint) * 2) + (sizeof(int) * 3) + sizeof(CommandType);
-        private const int FramePacketHeaderByteLength = sizeof(uint);
-        private const int ACKPacketByteLength = sizeof(uint);
+        const int InputPacketByteLength = (sizeof(uint) * 2) + (sizeof(int) * 3) + sizeof(CommandType);
+        const int FramePacketHeaderByteLength = sizeof(uint);
+        const int ACKPacketByteLength = sizeof(uint);
 
         public static byte[] InputPacketToBytes(InputPacket packet)
         {
@@ -45,7 +45,7 @@ namespace Lockstep.Packets
             {
                 clientId = BitConverter.ToUInt32(bytes, 0),
                 tick = BitConverter.ToUInt32(bytes, sizeof(uint)),
-                inputPos = new InputPosition
+                inputPos = new Position
                 {
                     x = BitConverter.ToInt32(bytes, sizeof(uint) * 2),
                     y = BitConverter.ToInt32(bytes, sizeof(uint) * 2 + sizeof(int)),
@@ -93,8 +93,7 @@ namespace Lockstep.Packets
 
             for (int i = 0; i < inputs.Length; i++)
             {
-                byte[] inputBytes = InputPacketToBytes(inputs[i]);
-                Buffer.BlockCopy(inputBytes, 0, bytes, FramePacketHeaderByteLength + i * InputPacketByteLength, InputPacketByteLength);
+                WriteInputPacket(inputs[i], bytes, FramePacketHeaderByteLength + i * InputPacketByteLength);
             }
 
             return bytes;
@@ -131,15 +130,44 @@ namespace Lockstep.Packets
             InputPacket[] inputs = new InputPacket[inputCount];
             for (int i = 0; i < inputCount; i++)
             {
-                byte[] inputBytes = new byte[InputPacketByteLength];
-                Buffer.BlockCopy(bytes, FramePacketHeaderByteLength + i * InputPacketByteLength, inputBytes, 0, InputPacketByteLength);
-                inputs[i] = BytesToInputPacket(inputBytes);
+                inputs[i] = ReadInputPacket(bytes, FramePacketHeaderByteLength + i * InputPacketByteLength);
             }
 
             return new FramePacket
             {
                 tick = tick,
                 inputs = inputs
+            };
+        }
+
+        static void WriteInputPacket(InputPacket packet, byte[] bytes, int offset)
+        {
+            Buffer.BlockCopy(BitConverter.GetBytes(packet.clientId), 0, bytes, offset, sizeof(uint));
+            offset += sizeof(uint);
+            Buffer.BlockCopy(BitConverter.GetBytes(packet.tick), 0, bytes, offset, sizeof(uint));
+            offset += sizeof(uint);
+            Buffer.BlockCopy(BitConverter.GetBytes(packet.inputPos.x), 0, bytes, offset, sizeof(int));
+            offset += sizeof(int);
+            Buffer.BlockCopy(BitConverter.GetBytes(packet.inputPos.y), 0, bytes, offset, sizeof(int));
+            offset += sizeof(int);
+            Buffer.BlockCopy(BitConverter.GetBytes(packet.inputPos.z), 0, bytes, offset, sizeof(int));
+            offset += sizeof(int);
+            bytes[offset] = (byte)packet.commandType;
+        }
+
+        static InputPacket ReadInputPacket(byte[] bytes, int offset)
+        {
+            return new InputPacket
+            {
+                clientId = BitConverter.ToUInt32(bytes, offset),
+                tick = BitConverter.ToUInt32(bytes, offset + sizeof(uint)),
+                inputPos = new Position
+                {
+                    x = BitConverter.ToInt32(bytes, offset + sizeof(uint) * 2),
+                    y = BitConverter.ToInt32(bytes, offset + sizeof(uint) * 2 + sizeof(int)),
+                    z = BitConverter.ToInt32(bytes, offset + sizeof(uint) * 2 + sizeof(int) * 2)
+                },
+                commandType = (CommandType)bytes[offset + sizeof(uint) * 2 + sizeof(int) * 3]
             };
         }
     }

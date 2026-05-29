@@ -97,12 +97,12 @@ public static class Program
 
     static void SendConnectionResponse(UdpClient server, IPEndPoint remote, uint clientId)
     {
-        RequestPacket responsePacket = new RequestPacket
+        ACKPacket responsePacket = new ACKPacket
         {
             clientId = clientId
         };
 
-        byte[] responseData = PacketCodec.RequestPacketToBytes(responsePacket);
+        byte[] responseData = PacketCodec.ACKPacketToBytes(responsePacket);
         server.Send(responseData, responseData.Length, remote);
     }
 

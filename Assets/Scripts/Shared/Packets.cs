@@ -14,7 +14,7 @@ namespace Lockstep.Packets
     {
         public uint clientId;
         public uint tick;
-        public InputPosition inputPos;
+        public Position inputPos;
         public CommandType commandType;
     }
 
@@ -35,7 +35,7 @@ namespace Lockstep.Packets
 
     // Client input
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    public struct InputPosition
+    public struct Position
     {
         public int x;
         public int y;

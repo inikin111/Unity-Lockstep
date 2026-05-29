@@ -1,6 +1,4 @@
 using UnityEngine;
-using System.Net;
-using System.Net.Sockets;
 using Lockstep.Packets;
 
 public class Client : MonoSingleton<Client>
@@ -17,17 +15,14 @@ public class Client : MonoSingleton<Client>
 
     public FramePacket latestFramePacket;
     
-    void Start()
-    {
-        while (!clientNetwork.Initialize((uint id) => {assignedClientId = id;})) {}
-    }
-
     void Update()
     {
+        if (!clientNetwork.Initialize((uint id) => {assignedClientId = id;})) { return; }
+
         accumulatedTime += Time.deltaTime;
         while (accumulatedTime >= fixedTimeStepSeconds)
         {
-            clientNetwork.SendInputPacket(CreateInputPacket());
+            clientNetwork.SendLocalInput(CreateInputPacket());
             latestFramePacket = clientNetwork.ReceiveFramePacket();
             simulator.StartSimulates(latestFramePacket);
 
@@ -37,13 +32,23 @@ public class Client : MonoSingleton<Client>
 
     InputPacket CreateInputPacket()
     {
-        InputPosition inputPosition = inputManager.ReadInput();
+        if (!inputManager.ReadInput(out Lockstep.Packets.Position inputPosition))
+        {
+            return new InputPacket
+            {
+                clientId = assignedClientId,
+                tick = currentInputTick++,
+                inputPos = inputPosition,
+                commandType = CommandType.None
+            };
+        }
+
         return new InputPacket
         {
-            isValid = true,
             clientId = assignedClientId,
             tick = currentInputTick++,
-            inputPos = inputPosition
+            inputPos = inputPosition,
+            commandType = CommandType.Move
         };
     }
 }
