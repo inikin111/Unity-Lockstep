@@ -11,7 +11,7 @@ public class ClientNetwork
     IPEndPoint receiveEndPoint = new IPEndPoint(IPAddress.Any, 0);
     Action<uint, ClientPos[]> onClientIdAssigned;
 
-    public bool Initialize(Action<uint, ClientPos[]> onClientIdAssigned, Position pos)
+    public bool Initialize(Action<uint, ClientPos[]> onClientIdAssigned, Vector3i pos)
     {
         this.onClientIdAssigned = onClientIdAssigned;
         ConnectToServer();
@@ -27,7 +27,7 @@ public class ClientNetwork
         server.Connect(ServerIP, ServerPort);
     }
 
-    void SendConnectionRequest(Position pos)
+    void SendConnectionRequest(Vector3i pos)
     {
         ClientPos[] position = new ClientPos[1];
         position[0] = new ClientPos { clientId = 0, position = pos };

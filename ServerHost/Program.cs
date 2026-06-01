@@ -4,7 +4,7 @@ using Lockstep.Packets;
 
 public static class Program
 {
-    public record PendingClient(uint ClientId, Position Position);
+    public record PendingClient(uint ClientId, Vector3i Position);
 
     public static void Main()
     {

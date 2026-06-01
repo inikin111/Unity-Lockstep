@@ -6,13 +6,13 @@ public class Client : MonoSingleton<Client>
     InputManager inputManager => GetComponent<InputManager>();
     // TickScheduler tickScheduler => GetComponent<TickScheduler>();
     Vector3 Pos => gameObject.transform.position;
-    const int FixedPointMultiplier = 1000;
-    int GetFixedX() => Mathf.RoundToInt(Pos.x * FixedPointMultiplier);
-    int GetFixedY() => Mathf.RoundToInt(Pos.y * FixedPointMultiplier);
-    int GetFixedZ() => Mathf.RoundToInt(Pos.z * FixedPointMultiplier);
+    int GetIntX() => Mathf.RoundToInt(Pos.x * Scale);
+    int GetIntY() => Mathf.RoundToInt(Pos.y * Scale);
+    int GetIntZ() => Mathf.RoundToInt(Pos.z * Scale);
     readonly ClientNetwork clientNetwork = new ClientNetwork();
     readonly Simulator simulator = new Simulator();
-    const double FixedTimeStepSeconds = 1.0 / 30.0; // 30 ticks per second
+    public const int Scale = 1000;
+    public const double FixedTimeStepSeconds = 1.0 / 30.0; // 30 ticks per second
     double accumulatedTime = 0.0;
     uint currentInputTick = 0;
     uint clientId = 0;
@@ -26,7 +26,7 @@ public class Client : MonoSingleton<Client>
         if (!isConnected && accumulatedTime >= 3.0)
         {
             accumulatedTime -= 3.0;
-            if (!clientNetwork.Initialize(OnResponseReceived, new Position { x = GetFixedX(), y = GetFixedY(), z = GetFixedZ() }))
+            if (!clientNetwork.Initialize(OnResponseReceived, Vector3i.FromVector3(Pos)))
             {
                 return;
             }
@@ -44,7 +44,7 @@ public class Client : MonoSingleton<Client>
         {
             clientNetwork.SendLocalInput(CreateInputPacket());
             latestFramePacket = clientNetwork.ReceiveFramePacket();
-            simulator.StartSimulates(latestFramePacket);
+            simulator.SimulateTick(latestFramePacket);
 
             accumulatedTime -= FixedTimeStepSeconds;
         }
@@ -52,7 +52,7 @@ public class Client : MonoSingleton<Client>
 
     InputPacket CreateInputPacket()
     {
-        if (!inputManager.ReadInput(out Position inputPosition))
+        if (!inputManager.ReadInput(out Vector3i inputPosition))
         {
             return new InputPacket
             {
@@ -75,12 +75,10 @@ public class Client : MonoSingleton<Client>
     void OnResponseReceived(uint uid, ClientPos[] positions)
     {
         clientId = uid;
-        simulator.SetPlayerState(clientId:          clientId,
-                                 commandType:       CommandType.None,
+        simulator.SetPlayerState(clientId: clientId,
+                                 commandType: CommandType.None,
                                  targetPosition:    default,
-                                 localPosition:     new Position { x = GetFixedX(),
-                                                                   y = GetFixedY(),
-                                                                   z = GetFixedZ() }
+                                 localPosition:     new Vector3i(GetIntX(), GetIntY(), GetIntZ())
         );
         simulator.SetGameState(positions);
     }

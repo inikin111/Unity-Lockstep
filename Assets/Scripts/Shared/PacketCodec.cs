@@ -46,7 +46,7 @@ namespace Lockstep.Packets
             {
                 clientId = BitConverter.ToUInt32(bytes, 0),
                 tick = BitConverter.ToUInt32(bytes, sizeof(uint)),
-                inputPos = new Position
+                inputPos = new Vector3i
                 {
                     x = BitConverter.ToInt32(bytes, sizeof(uint) * 2),
                     y = BitConverter.ToInt32(bytes, sizeof(uint) * 2 + sizeof(int)),
@@ -91,7 +91,7 @@ namespace Lockstep.Packets
                 positions[i] = new ClientPos
                 {
                     clientId = BitConverter.ToUInt32(bytes, ACKPacketHeaderLength + i * ClientPosLength),
-                    position = new Position
+                    position = new Vector3i
                     {
                         x = BitConverter.ToInt32(bytes, ACKPacketHeaderLength + i * ClientPosLength + sizeof(uint)),
                         y = BitConverter.ToInt32(bytes, ACKPacketHeaderLength + i * ClientPosLength + sizeof(uint) + sizeof(int)),
@@ -184,7 +184,7 @@ namespace Lockstep.Packets
             {
                 clientId = BitConverter.ToUInt32(bytes, offset),
                 tick = BitConverter.ToUInt32(bytes, offset + sizeof(uint)),
-                inputPos = new Position
+                inputPos = new Vector3i
                 {
                     x = BitConverter.ToInt32(bytes, offset + sizeof(uint) * 2),
                     y = BitConverter.ToInt32(bytes, offset + sizeof(uint) * 2 + sizeof(int)),

@@ -15,7 +15,7 @@ namespace Lockstep.Packets
     {
         public uint clientId;
         public uint tick;
-        public Position inputPos;
+        public Vector3i inputPos;
         public CommandType commandType;
     }
 
@@ -39,19 +39,10 @@ namespace Lockstep.Packets
     public struct ClientPos
     {
         public uint clientId;
-        public Position position;
+        public Vector3i position;
         public int X => position.x;
         public int Y => position.y;
         public int Z => position.z;
-    }
-
-    // Client input
-    [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    public struct Position
-    {
-        public int x;
-        public int y;
-        public int z;
     }
 
     // Legacy design, just keep it for now
