@@ -5,13 +5,14 @@ namespace Lockstep.Packets
 {
     public static class PacketCodec
     {
-        const int InputPacketByteLength = (sizeof(uint) * 2) + (sizeof(int) * 3) + sizeof(CommandType);
-        const int FramePacketHeaderByteLength = sizeof(uint);
-        const int ACKPacketByteLength = sizeof(uint);
+        const int InputPacketLength = (sizeof(uint) * 2) + (sizeof(int) * 3) + sizeof(CommandType);
+        const int FramePacketHeaderLength = sizeof(uint);
+        const int ACKPacketHeaderLength = sizeof(uint);
+        const int ClientPosLength = sizeof(uint) + (sizeof(int) * 3);
 
         public static byte[] InputPacketToBytes(InputPacket packet)
         {
-            byte[] bytes = new byte[InputPacketByteLength];
+            byte[] bytes = new byte[InputPacketLength];
             int offset = 0;
 
             Buffer.BlockCopy(BitConverter.GetBytes(packet.clientId), 0, bytes, offset, sizeof(uint));
@@ -36,9 +37,9 @@ namespace Lockstep.Packets
                 throw new ArgumentNullException(nameof(bytes));
             }
 
-            if (bytes.Length < InputPacketByteLength)
+            if (bytes.Length < InputPacketLength)
             {
-                throw new ArgumentException($"InputPacket data must be at least {InputPacketByteLength} bytes.", nameof(bytes));
+                throw new ArgumentException($"InputPacket data must be at least {InputPacketLength} bytes.", nameof(bytes));
             }
 
             var result = new InputPacket
@@ -59,9 +60,15 @@ namespace Lockstep.Packets
 
         public static byte[] ACKPacketToBytes(ACKPacket packet)
         {
-            byte[] bytes = new byte[ACKPacketByteLength];
+            byte[] bytes = new byte[ACKPacketHeaderLength + packet.clientPos.Length * ClientPosLength];
 
             Buffer.BlockCopy(BitConverter.GetBytes(packet.clientId), 0, bytes, 0, sizeof(uint));
+            for (int i = 0; i < packet.clientPos.Length; i++)
+            {
+                Buffer.BlockCopy(BitConverter.GetBytes(packet.clientPos[i].X), 0, bytes, ACKPacketHeaderLength + i * sizeof(int) * 3, sizeof(int));
+                Buffer.BlockCopy(BitConverter.GetBytes(packet.clientPos[i].Y), 0, bytes, ACKPacketHeaderLength + i * sizeof(int) * 3 + sizeof(int), sizeof(int));
+                Buffer.BlockCopy(BitConverter.GetBytes(packet.clientPos[i].Z), 0, bytes, ACKPacketHeaderLength + i * sizeof(int) * 3 + sizeof(int) * 2, sizeof(int));
+            }
 
             return bytes;
         }
@@ -73,27 +80,43 @@ namespace Lockstep.Packets
                 throw new ArgumentNullException(nameof(bytes));
             }
 
-            if (bytes.Length < ACKPacketByteLength)
+            if (bytes.Length < ACKPacketHeaderLength)
             {
-                throw new ArgumentException($"ACKPacket data must be at least {ACKPacketByteLength} bytes.", nameof(bytes));
+                throw new ArgumentException($"ACKPacket data must be at least {ACKPacketHeaderLength} bytes.", nameof(bytes));
+            }
+
+            ClientPos[] positions = new ClientPos[(bytes.Length - ACKPacketHeaderLength) / ClientPosLength];
+            for (int i = 0; i < positions.Length; i++)
+            {
+                positions[i] = new ClientPos
+                {
+                    clientId = BitConverter.ToUInt32(bytes, ACKPacketHeaderLength + i * ClientPosLength),
+                    position = new Position
+                    {
+                        x = BitConverter.ToInt32(bytes, ACKPacketHeaderLength + i * ClientPosLength + sizeof(uint)),
+                        y = BitConverter.ToInt32(bytes, ACKPacketHeaderLength + i * ClientPosLength + sizeof(uint) + sizeof(int)),
+                        z = BitConverter.ToInt32(bytes, ACKPacketHeaderLength + i * ClientPosLength + sizeof(uint) + sizeof(int) * 2)
+                    }
+                };
             }
 
             return new ACKPacket
             {
-                clientId = BitConverter.ToUInt32(bytes, 0)
+                clientId = BitConverter.ToUInt32(bytes, 0),
+                clientPos = positions
             };
         }
 
         public static byte[] FramePacketToBytes(FramePacket packet)
         {
             InputPacket[] inputs = packet.inputs ?? Array.Empty<InputPacket>();
-            byte[] bytes = new byte[FramePacketHeaderByteLength + inputs.Length * InputPacketByteLength];
+            byte[] bytes = new byte[FramePacketHeaderLength + inputs.Length * InputPacketLength];
 
             Buffer.BlockCopy(BitConverter.GetBytes(packet.tick), 0, bytes, 0, sizeof(uint));
 
             for (int i = 0; i < inputs.Length; i++)
             {
-                WriteInputPacket(inputs[i], bytes, FramePacketHeaderByteLength + i * InputPacketByteLength);
+                WriteInputPacket(inputs[i], bytes, FramePacketHeaderLength + i * InputPacketLength);
             }
 
             return bytes;
@@ -106,21 +129,21 @@ namespace Lockstep.Packets
                 throw new ArgumentNullException(nameof(bytes));
             }
 
-            if (bytes.Length < FramePacketHeaderByteLength)
+            if (bytes.Length < FramePacketHeaderLength)
             {
-                throw new ArgumentException($"FramePacket data must be at least {FramePacketHeaderByteLength} bytes.", nameof(bytes));
+                throw new ArgumentException($"FramePacket data must be at least {FramePacketHeaderLength} bytes.", nameof(bytes));
             }
 
             uint tick = BitConverter.ToUInt32(bytes, 0);
-            int remainingLength = bytes.Length - FramePacketHeaderByteLength;
+            int remainingLength = bytes.Length - FramePacketHeaderLength;
 
-            if (remainingLength % InputPacketByteLength != 0)
+            if (remainingLength % InputPacketLength != 0)
             {
-                throw new ArgumentException($"FramePacket payload length must be a multiple of {InputPacketByteLength} bytes.", nameof(bytes));
+                throw new ArgumentException($"FramePacket payload length must be a multiple of {InputPacketLength} bytes.", nameof(bytes));
             }
 
-            uint inputCount = (uint)(remainingLength / InputPacketByteLength);
-            int expectedLength = FramePacketHeaderByteLength + (int)inputCount * InputPacketByteLength;
+            uint inputCount = (uint)(remainingLength / InputPacketLength);
+            int expectedLength = FramePacketHeaderLength + (int)inputCount * InputPacketLength;
 
             if (bytes.Length < expectedLength)
             {
@@ -130,7 +153,7 @@ namespace Lockstep.Packets
             InputPacket[] inputs = new InputPacket[inputCount];
             for (int i = 0; i < inputCount; i++)
             {
-                inputs[i] = ReadInputPacket(bytes, FramePacketHeaderByteLength + i * InputPacketByteLength);
+                inputs[i] = ReadInputPacket(bytes, FramePacketHeaderLength + i * InputPacketLength);
             }
 
             return new FramePacket

@@ -32,6 +32,17 @@ namespace Lockstep.Packets
     public struct ACKPacket
     {
         public uint clientId;
+        public ClientPos[] clientPos;
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public struct ClientPos
+    {
+        public uint clientId;
+        public Position position;
+        public int X => position.x;
+        public int Y => position.y;
+        public int Z => position.z;
     }
 
     // Client input

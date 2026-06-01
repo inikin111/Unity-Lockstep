@@ -9,13 +9,13 @@ public class ClientNetwork
     const int ServerPort = 5478;
     UdpClient server;
     IPEndPoint receiveEndPoint = new IPEndPoint(IPAddress.Any, 0);
-    Action<uint> onClientIdAssigned;
+    Action<uint, ClientPos[]> onClientIdAssigned;
 
-    public bool Initialize(Action<uint> onClientIdAssigned)
+    public bool Initialize(Action<uint, ClientPos[]> onClientIdAssigned, Position pos)
     {
         this.onClientIdAssigned = onClientIdAssigned;
         ConnectToServer();
-        SendConnectionRequest();
+        SendConnectionRequest(pos);
         ReceiveConnectionResponse();
 
         return true;
@@ -27,11 +27,15 @@ public class ClientNetwork
         server.Connect(ServerIP, ServerPort);
     }
 
-    void SendConnectionRequest()
+    void SendConnectionRequest(Position pos)
     {
+        ClientPos[] position = new ClientPos[1];
+        position[0] = new ClientPos { clientId = 0, position = pos };
+
         ACKPacket packet = new ACKPacket
         {
-            clientId = 0 // Client ID will be assigned by server
+            clientId = 0,
+            clientPos = position
         };
         byte[] data = PacketCodec.ACKPacketToBytes(packet);
         server.Send(data, data.Length);
@@ -46,7 +50,8 @@ public class ClientNetwork
         {
             ACKPacket responsePacket = PacketCodec.BytesToACKPacket(data);
             uint assignedClientId = responsePacket.clientId;
-            onClientIdAssigned?.Invoke(assignedClientId);
+            ClientPos[] assignedPositions = responsePacket.clientPos;
+            onClientIdAssigned?.Invoke(assignedClientId, assignedPositions);
         }
     }
 
@@ -65,6 +70,11 @@ public class ClientNetwork
 
     public void SendLocalInput(InputPacket input)
     {
+        if (server == null)
+        {
+            throw new InvalidOperationException("ClientNetwork has not been initialized.");
+        }
+
         byte[] data = PacketCodec.InputPacketToBytes(input);
         server.Send(data, data.Length);
     }

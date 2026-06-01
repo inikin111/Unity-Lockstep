@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using Lockstep.Packets;
-using UnityEngine;
 
 public struct PlayerState
 {
@@ -33,6 +32,8 @@ public class Simulator
                     break;
             }
             playerStates[input.clientId] = playerState;
+            
+            UnityEngine.Debug.Log($"Simulate clientId={input.clientId}, commandType={input.commandType}");
         }
     }
 
@@ -48,4 +49,20 @@ public class Simulator
         playerStates[clientId] = state;
     }
 
+    public void SetGameState(ClientPos[] clientPositions)
+    {
+        foreach (ClientPos clientPos in clientPositions)
+        {
+            if (!playerStates.TryGetValue(clientPos.clientId, out PlayerState playerState))
+            {
+                playerState = new PlayerState()
+                {
+                    commandType = CommandType.None,
+                    targetPosition = default,
+                    localPosition = clientPos.position
+                };
+            }
+            playerStates[clientPos.clientId] = playerState;
+        }
+    }
 }
