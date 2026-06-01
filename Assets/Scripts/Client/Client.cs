@@ -27,6 +27,7 @@ public class Client : MonoSingleton<Client>
     void Update()
     {
         accumulatedTime += Time.deltaTime;
+
         if (!isConnected && accumulatedTime >= 3.0)
         {
             accumulatedTime -= 3.0;
@@ -45,16 +46,23 @@ public class Client : MonoSingleton<Client>
             return;
         }
 
-        accumulatedTime += Time.deltaTime;
         while (accumulatedTime >= FixedTimeStepSeconds)
         {
-            clientNetwork.SendLocalInput(CreateInputPacket());
-            latestFramePacket = clientNetwork.ReceiveFramePacket();
-            simulator.SimulateFrame(latestFramePacket);
-            gameRenderer.WorldRendering(simulator.playerStates);
-
+            Tick();
             accumulatedTime -= FixedTimeStepSeconds;
         }
+    }
+
+    void Tick()
+    {
+        clientNetwork.SendLocalInput(CreateInputPacket());
+        if (!clientNetwork.TryReceiveFramePacket(out FramePacket framePacket))
+        {
+            return;
+        }
+        latestFramePacket = framePacket;
+        simulator.SimulateFrame(latestFramePacket);
+        gameRenderer.WorldRendering(simulator.playerStates);
     }
 
     InputPacket CreateInputPacket()
@@ -83,15 +91,13 @@ public class Client : MonoSingleton<Client>
     void OnResponseReceived(uint uid, ClientPos[] positions)
     {
         clientId = uid;
-        // 罪魁祸首是Position
+
         foreach (var pos in positions)
         {
             Debug.Log($"Received client position from server. clientId={pos.clientId}, position=({pos.X}, {pos.Y}, {pos.Z})");
         }
-        simulator.SetGameState(positions); // 罪魁祸首
+        simulator.SetGameState(positions);
         gameRenderer.AddLocalPlayerUnit(uid, this.gameObject);
-        // Debug.Log($"simulator player states count: {simulator.playerStates.Count}");
-        // Debug.Log($"Simulator player clientId: {simulator.playerStates[0]}, position: {simulator.playerStates[0].localPosition}");
         gameRenderer.WorldRendering(simulator.playerStates);
     }
 

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using Lockstep.Packets;
@@ -58,6 +59,7 @@ public static class Program
 
         Console.WriteLine("Server started on udp://127.0.0.1:5478");
 
+        // TODO: 改成30tick每秒
         while (true)
         {
             // Stage 2: Receive input packets

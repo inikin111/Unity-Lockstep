@@ -16,8 +16,7 @@ public class ClientNetwork
         this.onClientIdAssigned = onClientIdAssigned;
         ConnectToServer();
         SendConnectionRequest(pos);
-        if (!ReceiveConnectionResponse())
-            return false;
+        if (!TryReceiveConnectionResponse()) return false;
 
         return true;
     }
@@ -42,9 +41,9 @@ public class ClientNetwork
         server.Send(data, data.Length);
     }
 
-    bool ReceiveConnectionResponse()
+    bool TryReceiveConnectionResponse()
     {
-        if (server.Available >= 0)
+        if (server.Available > 0)
         {
             IPEndPoint remote = receiveEndPoint;
             byte[] data = server.Receive(ref remote);
@@ -62,17 +61,25 @@ public class ClientNetwork
         return false;
     }
 
-    public FramePacket ReceiveFramePacket()
+    public bool TryReceiveFramePacket(out FramePacket framePacket)
     {
+        framePacket = default;
+        if (server.Available <= 0)
+        {
+            return false;
+        }
+
         IPEndPoint remote = receiveEndPoint;
         byte[] data = server.Receive(ref remote);
         receiveEndPoint = remote;
-        if (data.Length > 0)
+
+        if (data.Length <= 0)
         {
-            FramePacket framePacket = PacketCodec.BytesToFramePacket(data);
-            return framePacket;
+            return false;
         }
-        return default;
+
+        framePacket = PacketCodec.BytesToFramePacket(data);
+        return true;
     }
 
     public void SendLocalInput(InputPacket input)
