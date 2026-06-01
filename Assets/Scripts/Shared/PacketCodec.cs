@@ -5,17 +5,16 @@ namespace Lockstep.Packets
 {
     public static class PacketCodec
     {
-        private const int InputPacketByteLength = sizeof(bool) + sizeof(uint) + sizeof(uint) + sizeof(int) * 3;
-        private const int FramePacketHeaderByteLength = sizeof(uint) * 2;
-        private const int RequestPacketByteLength = sizeof(uint);
+        const int InputPacketLength = (sizeof(uint) * 2) + (sizeof(int) * 3) + sizeof(CommandType);
+        const int FramePacketHeaderLength = sizeof(uint);
+        const int ACKPacketHeaderLength = sizeof(uint);
+        const int ClientPosLength = sizeof(uint) + (sizeof(int) * 3);
 
         public static byte[] InputPacketToBytes(InputPacket packet)
         {
-            byte[] bytes = new byte[InputPacketByteLength];
-
+            byte[] bytes = new byte[InputPacketLength];
             int offset = 0;
-            Buffer.BlockCopy(BitConverter.GetBytes(packet.isValid), 0, bytes, offset, sizeof(bool));
-            offset += sizeof(bool);
+
             Buffer.BlockCopy(BitConverter.GetBytes(packet.clientId), 0, bytes, offset, sizeof(uint));
             offset += sizeof(uint);
             Buffer.BlockCopy(BitConverter.GetBytes(packet.tick), 0, bytes, offset, sizeof(uint));
@@ -25,6 +24,8 @@ namespace Lockstep.Packets
             Buffer.BlockCopy(BitConverter.GetBytes(packet.inputPos.y), 0, bytes, offset, sizeof(int));
             offset += sizeof(int);
             Buffer.BlockCopy(BitConverter.GetBytes(packet.inputPos.z), 0, bytes, offset, sizeof(int));
+            offset += sizeof(int);
+            bytes[offset] = (byte)packet.commandType;
 
             return bytes;
         }
@@ -36,95 +37,91 @@ namespace Lockstep.Packets
                 throw new ArgumentNullException(nameof(bytes));
             }
 
-            if (bytes.Length < InputPacketByteLength)
+            if (bytes.Length < InputPacketLength)
             {
-                throw new ArgumentException($"InputPacket data must be at least {InputPacketByteLength} bytes.", nameof(bytes));
+                throw new ArgumentException($"InputPacket data must be at least {InputPacketLength} bytes.", nameof(bytes));
             }
 
-            return new InputPacket
+            var result = new InputPacket
             {
-                isValid = BitConverter.ToBoolean(bytes, 0),
-                clientId = BitConverter.ToUInt32(bytes, sizeof(bool)),
-                tick = BitConverter.ToUInt32(bytes, sizeof(bool) + sizeof(uint)),
-                inputPos = new InputPosition
+                clientId = BitConverter.ToUInt32(bytes, 0),
+                tick = BitConverter.ToUInt32(bytes, sizeof(uint)),
+                inputPos = new Vector3i
                 {
-                    x = BitConverter.ToInt32(bytes, sizeof(bool) + sizeof(uint) + sizeof(uint)),
-                    y = BitConverter.ToInt32(bytes, sizeof(bool) + sizeof(uint) + sizeof(uint) + sizeof(int)),
-                    z = BitConverter.ToInt32(bytes, sizeof(bool) + sizeof(uint) + sizeof(uint) + sizeof(int) * 2)
-                }
+                    x = BitConverter.ToInt32(bytes, sizeof(uint) * 2),
+                    y = BitConverter.ToInt32(bytes, sizeof(uint) * 2 + sizeof(int)),
+                    z = BitConverter.ToInt32(bytes, sizeof(uint) * 2 + sizeof(int) * 2)
+                },
+                commandType = (CommandType)bytes[sizeof(uint) * 2 + sizeof(int) * 3]
             };
+
+            return result;
         }
 
-        public static byte[] StringToBytes(string value)
+        public static byte[] ACKPacketToBytes(ACKPacket packet)
         {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
-
-            return Encoding.UTF8.GetBytes(value);
-        }
-
-        public static string BytesToString(byte[] bytes)
-        {
-            if (bytes == null)
-            {
-                throw new ArgumentNullException(nameof(bytes));
-            }
-
-            return Encoding.UTF8.GetString(bytes);
-        }
-
-        public static byte[] RequestPacketToBytes(RequestPacket packet)
-        {
-            byte[] bytes = new byte[RequestPacketByteLength];
+            byte[] bytes = new byte[ACKPacketHeaderLength + packet.clientPos.Length * ClientPosLength];
 
             Buffer.BlockCopy(BitConverter.GetBytes(packet.clientId), 0, bytes, 0, sizeof(uint));
+            for (int i = 0; i < packet.clientPos.Length; i++)
+            {
+                int offset = ACKPacketHeaderLength + i * ClientPosLength;
+                Buffer.BlockCopy(BitConverter.GetBytes(packet.clientPos[i].clientId), 0, bytes, offset, sizeof(uint));
+                offset += sizeof(uint);
+                Buffer.BlockCopy(BitConverter.GetBytes(packet.clientPos[i].X), 0, bytes, offset, sizeof(int));
+                offset += sizeof(int);
+                Buffer.BlockCopy(BitConverter.GetBytes(packet.clientPos[i].Y), 0, bytes, offset, sizeof(int));
+                offset += sizeof(int);
+                Buffer.BlockCopy(BitConverter.GetBytes(packet.clientPos[i].Z), 0, bytes, offset, sizeof(int));
+            }
 
             return bytes;
         }
 
-        public static RequestPacket BytesToRequestPacket(byte[] bytes)
+        public static ACKPacket BytesToACKPacket(byte[] bytes)
         {
             if (bytes == null)
             {
                 throw new ArgumentNullException(nameof(bytes));
             }
 
-            if (bytes.Length < RequestPacketByteLength)
+            if (bytes.Length < ACKPacketHeaderLength)
             {
-                throw new ArgumentException($"RequestPacket data must be at least {RequestPacketByteLength} bytes.", nameof(bytes));
+                throw new ArgumentException($"ACKPacket data must be at least {ACKPacketHeaderLength} bytes.", nameof(bytes));
             }
 
-            return new RequestPacket
+            ClientPos[] positions = new ClientPos[(bytes.Length - ACKPacketHeaderLength) / ClientPosLength];
+            for (int i = 0; i < positions.Length; i++)
             {
-                clientId = BitConverter.ToUInt32(bytes, 0)
+                positions[i] = new ClientPos
+                {
+                    clientId = BitConverter.ToUInt32(bytes, ACKPacketHeaderLength + i * ClientPosLength),
+                    position = new Vector3i
+                    {
+                        x = BitConverter.ToInt32(bytes, ACKPacketHeaderLength + i * ClientPosLength + sizeof(uint)),
+                        y = BitConverter.ToInt32(bytes, ACKPacketHeaderLength + i * ClientPosLength + sizeof(uint) + sizeof(int)),
+                        z = BitConverter.ToInt32(bytes, ACKPacketHeaderLength + i * ClientPosLength + sizeof(uint) + sizeof(int) * 2)
+                    }
+                };
+            }
+
+            return new ACKPacket
+            {
+                clientId = BitConverter.ToUInt32(bytes, 0),
+                clientPos = positions
             };
         }
 
         public static byte[] FramePacketToBytes(FramePacket packet)
         {
             InputPacket[] inputs = packet.inputs ?? Array.Empty<InputPacket>();
-            byte[] bytes = new byte[FramePacketHeaderByteLength + inputs.Length * InputPacketByteLength];
+            byte[] bytes = new byte[FramePacketHeaderLength + inputs.Length * InputPacketLength];
 
             Buffer.BlockCopy(BitConverter.GetBytes(packet.tick), 0, bytes, 0, sizeof(uint));
-            Buffer.BlockCopy(BitConverter.GetBytes((uint)inputs.Length), 0, bytes, sizeof(uint), sizeof(uint));
 
             for (int i = 0; i < inputs.Length; i++)
             {
-                int offset = FramePacketHeaderByteLength + i * InputPacketByteLength;
-                int inner = offset;
-                Buffer.BlockCopy(BitConverter.GetBytes(inputs[i].isValid), 0, bytes, inner, sizeof(bool));
-                inner += sizeof(bool);
-                Buffer.BlockCopy(BitConverter.GetBytes(inputs[i].clientId), 0, bytes, inner, sizeof(uint));
-                inner += sizeof(uint);
-                Buffer.BlockCopy(BitConverter.GetBytes(inputs[i].tick), 0, bytes, inner, sizeof(uint));
-                inner += sizeof(uint);
-                Buffer.BlockCopy(BitConverter.GetBytes(inputs[i].inputPos.x), 0, bytes, inner, sizeof(int));
-                inner += sizeof(int);
-                Buffer.BlockCopy(BitConverter.GetBytes(inputs[i].inputPos.y), 0, bytes, inner, sizeof(int));
-                inner += sizeof(int);
-                Buffer.BlockCopy(BitConverter.GetBytes(inputs[i].inputPos.z), 0, bytes, inner, sizeof(int));
+                WriteInputPacket(inputs[i], bytes, FramePacketHeaderLength + i * InputPacketLength);
             }
 
             return bytes;
@@ -137,14 +134,21 @@ namespace Lockstep.Packets
                 throw new ArgumentNullException(nameof(bytes));
             }
 
-            if (bytes.Length < FramePacketHeaderByteLength)
+            if (bytes.Length < FramePacketHeaderLength)
             {
-                throw new ArgumentException($"FramePacket data must be at least {FramePacketHeaderByteLength} bytes.", nameof(bytes));
+                throw new ArgumentException($"FramePacket data must be at least {FramePacketHeaderLength} bytes.", nameof(bytes));
             }
 
             uint tick = BitConverter.ToUInt32(bytes, 0);
-            uint inputCount = BitConverter.ToUInt32(bytes, sizeof(uint));
-            int expectedLength = FramePacketHeaderByteLength + (int)inputCount * InputPacketByteLength;
+            int remainingLength = bytes.Length - FramePacketHeaderLength;
+
+            if (remainingLength % InputPacketLength != 0)
+            {
+                throw new ArgumentException($"FramePacket payload length must be a multiple of {InputPacketLength} bytes.", nameof(bytes));
+            }
+
+            uint inputCount = (uint)(remainingLength / InputPacketLength);
+            int expectedLength = FramePacketHeaderLength + (int)inputCount * InputPacketLength;
 
             if (bytes.Length < expectedLength)
             {
@@ -154,25 +158,44 @@ namespace Lockstep.Packets
             InputPacket[] inputs = new InputPacket[inputCount];
             for (int i = 0; i < inputCount; i++)
             {
-                int offset = FramePacketHeaderByteLength + i * InputPacketByteLength;
-                inputs[i] = new InputPacket
-                {
-                    isValid = BitConverter.ToBoolean(bytes, offset),
-                    clientId = BitConverter.ToUInt32(bytes, offset + sizeof(bool)),
-                    tick = BitConverter.ToUInt32(bytes, offset + sizeof(bool) + sizeof(uint)),
-                    inputPos = new InputPosition
-                    {
-                        x = BitConverter.ToInt32(bytes, offset + sizeof(bool) + sizeof(uint) + sizeof(uint)),
-                        y = BitConverter.ToInt32(bytes, offset + sizeof(bool) + sizeof(uint) + sizeof(uint) + sizeof(int)),
-                        z = BitConverter.ToInt32(bytes, offset + sizeof(bool) + sizeof(uint) + sizeof(uint) + sizeof(int) * 2)
-                    }
-                };
+                inputs[i] = ReadInputPacket(bytes, FramePacketHeaderLength + i * InputPacketLength);
             }
 
             return new FramePacket
             {
                 tick = tick,
                 inputs = inputs
+            };
+        }
+
+        static void WriteInputPacket(InputPacket packet, byte[] bytes, int offset)
+        {
+            Buffer.BlockCopy(BitConverter.GetBytes(packet.clientId), 0, bytes, offset, sizeof(uint));
+            offset += sizeof(uint);
+            Buffer.BlockCopy(BitConverter.GetBytes(packet.tick), 0, bytes, offset, sizeof(uint));
+            offset += sizeof(uint);
+            Buffer.BlockCopy(BitConverter.GetBytes(packet.inputPos.x), 0, bytes, offset, sizeof(int));
+            offset += sizeof(int);
+            Buffer.BlockCopy(BitConverter.GetBytes(packet.inputPos.y), 0, bytes, offset, sizeof(int));
+            offset += sizeof(int);
+            Buffer.BlockCopy(BitConverter.GetBytes(packet.inputPos.z), 0, bytes, offset, sizeof(int));
+            offset += sizeof(int);
+            bytes[offset] = (byte)packet.commandType;
+        }
+
+        static InputPacket ReadInputPacket(byte[] bytes, int offset)
+        {
+            return new InputPacket
+            {
+                clientId = BitConverter.ToUInt32(bytes, offset),
+                tick = BitConverter.ToUInt32(bytes, offset + sizeof(uint)),
+                inputPos = new Vector3i
+                {
+                    x = BitConverter.ToInt32(bytes, offset + sizeof(uint) * 2),
+                    y = BitConverter.ToInt32(bytes, offset + sizeof(uint) * 2 + sizeof(int)),
+                    z = BitConverter.ToInt32(bytes, offset + sizeof(uint) * 2 + sizeof(int) * 2)
+                },
+                commandType = (CommandType)bytes[offset + sizeof(uint) * 2 + sizeof(int) * 3]
             };
         }
     }

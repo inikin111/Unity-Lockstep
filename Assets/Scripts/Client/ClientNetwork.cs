@@ -8,14 +8,16 @@ public class ClientNetwork
     const string ServerIP = "127.0.0.1";
     const int ServerPort = 5478;
     UdpClient server;
-    Action<uint> onClientIdAssigned;
+    IPEndPoint receiveEndPoint = new IPEndPoint(IPAddress.Any, 0);
+    Action<uint, ClientPos[]> onClientIdAssigned;
 
-    public bool Initialize(Action<uint> onClientIdAssigned)
+    public bool Initialize(Action<uint, ClientPos[]> onClientIdAssigned, Vector3i pos)
     {
         this.onClientIdAssigned = onClientIdAssigned;
         ConnectToServer();
-        SendConnectionRequest();
-        ReceiveConnectionResponse();
+        SendConnectionRequest(pos);
+        if (!ReceiveConnectionResponse())
+            return false;
 
         return true;
     }
@@ -26,32 +28,45 @@ public class ClientNetwork
         server.Connect(ServerIP, ServerPort);
     }
 
-    void SendConnectionRequest()
+    void SendConnectionRequest(Vector3i pos)
     {
-        RequestPacket packet = new RequestPacket
+        ClientPos[] position = new ClientPos[1];
+        position[0] = new ClientPos { clientId = 0, position = pos };
+
+        ACKPacket packet = new ACKPacket
         {
-            clientId = 0 // Client ID will be assigned by server
+            clientId = 0,
+            clientPos = position
         };
-        byte[] data = PacketCodec.RequestPacketToBytes(packet);
+        byte[] data = PacketCodec.ACKPacketToBytes(packet);
         server.Send(data, data.Length);
     }
 
-    void ReceiveConnectionResponse()
+    bool ReceiveConnectionResponse()
     {
-        IPEndPoint remote = new IPEndPoint(IPAddress.Any, 0);
-        byte[] data = server.Receive(ref remote);
-        if (data.Length > 0)
+        if (server.Available >= 0)
         {
-            RequestPacket responsePacket = PacketCodec.BytesToRequestPacket(data);
-            uint assignedClientId = responsePacket.clientId;
-            onClientIdAssigned?.Invoke(assignedClientId);
+            IPEndPoint remote = receiveEndPoint;
+            byte[] data = server.Receive(ref remote);
+            receiveEndPoint = remote;
+            if (data.Length > 0)
+            {
+                ACKPacket responsePacket = PacketCodec.BytesToACKPacket(data);
+                uint assignedClientId = responsePacket.clientId;
+                ClientPos[] assignedPositions = responsePacket.clientPos;
+                onClientIdAssigned?.Invoke(assignedClientId, assignedPositions);
+                return true;
+            }
         }
+
+        return false;
     }
 
     public FramePacket ReceiveFramePacket()
     {
-        IPEndPoint remote = new IPEndPoint(IPAddress.Any, 0);
+        IPEndPoint remote = receiveEndPoint;
         byte[] data = server.Receive(ref remote);
+        receiveEndPoint = remote;
         if (data.Length > 0)
         {
             FramePacket framePacket = PacketCodec.BytesToFramePacket(data);
@@ -60,8 +75,13 @@ public class ClientNetwork
         return default;
     }
 
-    public void SendInputPacket(InputPacket input)
+    public void SendLocalInput(InputPacket input)
     {
+        if (server == null)
+        {
+            throw new InvalidOperationException("ClientNetwork has not been initialized.");
+        }
+
         byte[] data = PacketCodec.InputPacketToBytes(input);
         server.Send(data, data.Length);
     }

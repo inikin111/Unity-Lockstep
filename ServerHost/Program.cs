@@ -1,11 +1,11 @@
-using System.Diagnostics;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using Lockstep.Packets;
 
 public static class Program
 {
+    public record PendingClient(uint ClientId, Vector3i Position);
+
     public static void Main()
     {
         using UdpClient server = new UdpClient(5478);
@@ -14,24 +14,47 @@ public static class Program
         uint connectedClientCount = 0;
         const uint maxClients = 1;
 
-        // Stage 1: Wait for clients to connect and assign client IDs
-        while (connectedClientCount < maxClients)
-        {
-            ReceiveConnectionRequest(server, ref remote);
-            uint clientId = connectedClientCount + 1;
-
-            SendConnectionResponse(server, remote, clientId);
-
-            Console.WriteLine($"Connection established from {remote.Address}:{remote.Port}, assigned clientId={clientId}");
-
-            connectedClientCount++;
-        }
         uint currentTick = 0;
-
+        
+        Dictionary<IPEndPoint, PendingClient> pendingConnections = new();
         Dictionary<uint, IPEndPoint> clients = new Dictionary<uint, IPEndPoint>();
         Dictionary<uint, Dictionary<uint, InputPacket>> inputsByTick = new Dictionary<uint, Dictionary<uint, InputPacket>>();
         const uint maxBufferedFrames = 64;
         FramePacket[] framePackets = new FramePacket[maxBufferedFrames]; 
+
+        // Stage 1: Wait for clients to connect and assign client IDs
+        while (pendingConnections.Count < maxClients)
+        {
+            byte[] data = server.Receive(ref remote);
+            if (data.Length > 0)
+            {
+                ACKPacket packet = PacketCodec.BytesToACKPacket(data);
+
+                connectedClientCount++;
+                uint clientId = connectedClientCount;
+                Console.WriteLine($"Assigning clientId={clientId} to {remote.Address}:{remote.Port}");
+                pendingConnections[remote] = new PendingClient(clientId, packet.clientPos[0].position);
+
+                Console.WriteLine($"Received connection request from {remote.Address}:{remote.Port}");
+            }
+        }
+
+        ClientPos[] positions = pendingConnections.Values.Select(connection => new ClientPos
+        {
+            clientId = connection.ClientId,
+            position = connection.Position
+        }).ToArray();
+
+        foreach (var connection in pendingConnections)
+        {
+            ACKPacket responsePacket = new ACKPacket
+            {
+                clientId = connection.Value.ClientId,
+                clientPos = positions
+            };
+            byte[] responseData = PacketCodec.ACKPacketToBytes(responsePacket);
+            server.Send(responseData, responseData.Length, connection.Key);
+        }
 
         Console.WriteLine("Server started on udp://127.0.0.1:5478");
 
@@ -52,18 +75,6 @@ public static class Program
 
             inputsByTick.Remove(currentTick);
             currentTick++;
-        }
-    }
-
-    static void ReceiveConnectionRequest(UdpClient server, ref IPEndPoint remote)
-    {
-        while (true)
-        {
-            byte[] data = server.Receive(ref remote);
-            if (data.Length > 0)
-            {
-                return;
-            }
         }
     }
 
@@ -93,17 +104,6 @@ public static class Program
             clients[packet.clientId] = new IPEndPoint(remote.Address, remote.Port);
             CacheInput(inputsByTick, packet);
         }
-    }
-
-    static void SendConnectionResponse(UdpClient server, IPEndPoint remote, uint clientId)
-    {
-        RequestPacket responsePacket = new RequestPacket
-        {
-            clientId = clientId
-        };
-
-        byte[] responseData = PacketCodec.RequestPacketToBytes(responsePacket);
-        server.Send(responseData, responseData.Length, remote);
     }
 
     static void SendFramePacket(UdpClient server, Dictionary<uint, IPEndPoint> clients, FramePacket framePacket)
