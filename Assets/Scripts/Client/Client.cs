@@ -4,11 +4,8 @@ using Lockstep.Packets;
 public class Client : MonoSingleton<Client>
 {
     InputManager inputManager;
-    Renderer worldRenderer;
+    GameRenderer gameRenderer;
     Vector3 Pos => gameObject.transform.position;
-    int GetIntX() => Mathf.RoundToInt(Pos.x * Scale);
-    int GetIntY() => Mathf.RoundToInt(Pos.y * Scale);
-    int GetIntZ() => Mathf.RoundToInt(Pos.z * Scale);
     readonly ClientNetwork clientNetwork = new ClientNetwork();
     readonly Simulator simulator = new Simulator();
     public const int Scale = 1000;
@@ -17,13 +14,14 @@ public class Client : MonoSingleton<Client>
     uint currentInputTick = 0;
     uint clientId = 0;
     bool isConnected = false;
+    int retryCount = 0;
 
     public FramePacket latestFramePacket;
 
     void Awake()
     {
         inputManager = GetComponent<InputManager>();
-        worldRenderer = GetComponent<Renderer>();
+        gameRenderer = GetComponent<GameRenderer>();
     }
     
     void Update()
@@ -34,6 +32,8 @@ public class Client : MonoSingleton<Client>
             accumulatedTime -= 3.0;
             if (!clientNetwork.Initialize(OnResponseReceived, Vector3i.FromVector3(Pos)))
             {
+                retryCount++;
+                if (retryCount == 3) EndEditor();
                 return;
             }
             isConnected = true;
@@ -51,7 +51,7 @@ public class Client : MonoSingleton<Client>
             clientNetwork.SendLocalInput(CreateInputPacket());
             latestFramePacket = clientNetwork.ReceiveFramePacket();
             simulator.SimulateFrame(latestFramePacket);
-            worldRenderer.WorldRendering(simulator.playerStates);
+            gameRenderer.WorldRendering(simulator.playerStates);
 
             accumulatedTime -= FixedTimeStepSeconds;
         }
@@ -59,6 +59,7 @@ public class Client : MonoSingleton<Client>
 
     InputPacket CreateInputPacket()
     {
+        Debug.Log($"ClientID: {clientId}");
         if (!inputManager.ReadInput(out Vector3i inputPosition))
         {
             return new InputPacket
@@ -82,13 +83,22 @@ public class Client : MonoSingleton<Client>
     void OnResponseReceived(uint uid, ClientPos[] positions)
     {
         clientId = uid;
-        
-        // 这个玩家状态初始化好像是不必要的
-        // simulator.SetPlayerState(clientId: clientId,
-        //                          commandType: CommandType.None,
-        //                          targetPosition:    default,
-        //                          localPosition:     new Vector3i(GetIntX(), GetIntY(), GetIntZ())
-        // );
-        simulator.SetGameState(positions);
+        // 罪魁祸首是Position
+        foreach (var pos in positions)
+        {
+            Debug.Log($"Received client position from server. clientId={pos.clientId}, position=({pos.X}, {pos.Y}, {pos.Z})");
+        }
+        simulator.SetGameState(positions); // 罪魁祸首
+        gameRenderer.AddLocalPlayerUnit(uid, this.gameObject);
+        // Debug.Log($"simulator player states count: {simulator.playerStates.Count}");
+        // Debug.Log($"Simulator player clientId: {simulator.playerStates[0]}, position: {simulator.playerStates[0].localPosition}");
+        gameRenderer.WorldRendering(simulator.playerStates);
+    }
+
+    void EndEditor()
+    {
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;
+#endif
     }
 }

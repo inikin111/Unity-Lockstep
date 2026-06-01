@@ -16,7 +16,8 @@ public class ClientNetwork
         this.onClientIdAssigned = onClientIdAssigned;
         ConnectToServer();
         SendConnectionRequest(pos);
-        ReceiveConnectionResponse();
+        if (!ReceiveConnectionResponse())
+            return false;
 
         return true;
     }
@@ -41,18 +42,24 @@ public class ClientNetwork
         server.Send(data, data.Length);
     }
 
-    void ReceiveConnectionResponse()
+    bool ReceiveConnectionResponse()
     {
-        IPEndPoint remote = receiveEndPoint;
-        byte[] data = server.Receive(ref remote);
-        receiveEndPoint = remote;
-        if (data.Length > 0)
+        if (server.Available >= 0)
         {
-            ACKPacket responsePacket = PacketCodec.BytesToACKPacket(data);
-            uint assignedClientId = responsePacket.clientId;
-            ClientPos[] assignedPositions = responsePacket.clientPos;
-            onClientIdAssigned?.Invoke(assignedClientId, assignedPositions);
+            IPEndPoint remote = receiveEndPoint;
+            byte[] data = server.Receive(ref remote);
+            receiveEndPoint = remote;
+            if (data.Length > 0)
+            {
+                ACKPacket responsePacket = PacketCodec.BytesToACKPacket(data);
+                uint assignedClientId = responsePacket.clientId;
+                ClientPos[] assignedPositions = responsePacket.clientPos;
+                onClientIdAssigned?.Invoke(assignedClientId, assignedPositions);
+                return true;
+            }
         }
+
+        return false;
     }
 
     public FramePacket ReceiveFramePacket()

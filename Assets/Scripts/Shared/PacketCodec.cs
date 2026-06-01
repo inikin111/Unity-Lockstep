@@ -65,9 +65,14 @@ namespace Lockstep.Packets
             Buffer.BlockCopy(BitConverter.GetBytes(packet.clientId), 0, bytes, 0, sizeof(uint));
             for (int i = 0; i < packet.clientPos.Length; i++)
             {
-                Buffer.BlockCopy(BitConverter.GetBytes(packet.clientPos[i].X), 0, bytes, ACKPacketHeaderLength + i * sizeof(int) * 3, sizeof(int));
-                Buffer.BlockCopy(BitConverter.GetBytes(packet.clientPos[i].Y), 0, bytes, ACKPacketHeaderLength + i * sizeof(int) * 3 + sizeof(int), sizeof(int));
-                Buffer.BlockCopy(BitConverter.GetBytes(packet.clientPos[i].Z), 0, bytes, ACKPacketHeaderLength + i * sizeof(int) * 3 + sizeof(int) * 2, sizeof(int));
+                int offset = ACKPacketHeaderLength + i * ClientPosLength;
+                Buffer.BlockCopy(BitConverter.GetBytes(packet.clientPos[i].clientId), 0, bytes, offset, sizeof(uint));
+                offset += sizeof(uint);
+                Buffer.BlockCopy(BitConverter.GetBytes(packet.clientPos[i].X), 0, bytes, offset, sizeof(int));
+                offset += sizeof(int);
+                Buffer.BlockCopy(BitConverter.GetBytes(packet.clientPos[i].Y), 0, bytes, offset, sizeof(int));
+                offset += sizeof(int);
+                Buffer.BlockCopy(BitConverter.GetBytes(packet.clientPos[i].Z), 0, bytes, offset, sizeof(int));
             }
 
             return bytes;
