@@ -42,3 +42,5 @@ Desktop.ini
 # VS Code workspace settings
 .vscode/*
 !.vscode/extensions.json
+
+Assets/_Recovery/
