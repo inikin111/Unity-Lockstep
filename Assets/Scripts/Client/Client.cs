@@ -3,8 +3,8 @@ using Lockstep.Packets;
 
 public class Client : MonoSingleton<Client>
 {
-    InputManager inputManager => GetComponent<InputManager>();
-    // TickScheduler tickScheduler => GetComponent<TickScheduler>();
+    InputManager inputManager;
+    Renderer worldRenderer;
     Vector3 Pos => gameObject.transform.position;
     int GetIntX() => Mathf.RoundToInt(Pos.x * Scale);
     int GetIntY() => Mathf.RoundToInt(Pos.y * Scale);
@@ -19,6 +19,12 @@ public class Client : MonoSingleton<Client>
     bool isConnected = false;
 
     public FramePacket latestFramePacket;
+
+    void Awake()
+    {
+        inputManager = GetComponent<InputManager>();
+        worldRenderer = GetComponent<Renderer>();
+    }
     
     void Update()
     {
@@ -44,7 +50,8 @@ public class Client : MonoSingleton<Client>
         {
             clientNetwork.SendLocalInput(CreateInputPacket());
             latestFramePacket = clientNetwork.ReceiveFramePacket();
-            simulator.SimulateTick(latestFramePacket);
+            simulator.SimulateFrame(latestFramePacket);
+            worldRenderer.WorldRendering(simulator.playerStates);
 
             accumulatedTime -= FixedTimeStepSeconds;
         }
@@ -75,11 +82,13 @@ public class Client : MonoSingleton<Client>
     void OnResponseReceived(uint uid, ClientPos[] positions)
     {
         clientId = uid;
-        simulator.SetPlayerState(clientId: clientId,
-                                 commandType: CommandType.None,
-                                 targetPosition:    default,
-                                 localPosition:     new Vector3i(GetIntX(), GetIntY(), GetIntZ())
-        );
+        
+        // 这个玩家状态初始化好像是不必要的
+        // simulator.SetPlayerState(clientId: clientId,
+        //                          commandType: CommandType.None,
+        //                          targetPosition:    default,
+        //                          localPosition:     new Vector3i(GetIntX(), GetIntY(), GetIntZ())
+        // );
         simulator.SetGameState(positions);
     }
 }

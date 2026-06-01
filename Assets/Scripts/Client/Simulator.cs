@@ -4,7 +4,6 @@ using Lockstep.Packets;
 
 public struct PlayerState
 {
-    public bool moveFlag;
     public CommandType commandType;
     public Vector3i targetPosition;
     public Vector3i localPosition;
@@ -12,27 +11,25 @@ public struct PlayerState
 
 public class Simulator
 {    
-    Dictionary<uint, PlayerState> playerStates = new Dictionary<uint, PlayerState>();
+    public Dictionary<uint, PlayerState> playerStates { get; private set; } = new Dictionary<uint, PlayerState>();
     public const int FixedDeltaTimeMs = 33;
     public int moveSpeed = 50;
 
-    public void SimulateTick(FramePacket framePacket)
+    public void SimulateFrame(FramePacket framePacket)
     {
         // UnityEngine.Debug.Log($"[Simulator] Tick={framePacket.tick}, inputCount={(framePacket.inputs == null ? 0 : framePacket.inputs.Length)}, playerCount={playerStates.Count}");
-
         foreach (InputPacket input in framePacket.inputs)
         {
             if (!playerStates.TryGetValue(input.clientId, out PlayerState playerState))
             {
                 playerState = new PlayerState();
             }
-            playerState.commandType = input.commandType;
 
             switch (input.commandType)
             {
                 case CommandType.Move:
                     playerState.targetPosition = input.inputPos;
-                    playerState.moveFlag = true;
+                    playerState.commandType = CommandType.Move;
                     break;
                 case CommandType.None:
                     break;
@@ -46,7 +43,7 @@ public class Simulator
         {
             var state = playerStates[clientId];
 
-            if (state.moveFlag == true)
+            if (state.commandType == CommandType.Move)
             {
                 Vector3i delta = state.targetPosition - state.localPosition;
                 int distanceToTarget = Vector3i.Distance(state.localPosition, state.targetPosition);
@@ -56,7 +53,7 @@ public class Simulator
                 if (distanceToTarget <= moveSpeed)
                 {
                     state.localPosition = state.targetPosition; // 到达目标位置
-                    state.moveFlag = false; // 停止移动
+                    state.commandType = CommandType.None; // 停止移动
                     UnityEngine.Debug.Log($"[Simulator] Arrived clientId={clientId}, position={state.localPosition}");
                 }
                 else
@@ -75,7 +72,6 @@ public class Simulator
     {
         PlayerState state = new()
         {
-            moveFlag = commandType == CommandType.Move,
             commandType = commandType,
             targetPosition = targetPosition,
             localPosition = localPosition
@@ -92,7 +88,6 @@ public class Simulator
             {
                 playerState = new PlayerState()
                 {
-                    moveFlag = false,
                     commandType = CommandType.None,
                     targetPosition = default,
                     localPosition = clientPos.position
