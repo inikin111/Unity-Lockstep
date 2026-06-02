@@ -1,5 +1,6 @@
 using UnityEngine;
 using Lockstep.Packets;
+using System.Collections.Generic;
 
 public class Client : MonoSingleton<Client>
 {
@@ -16,7 +17,8 @@ public class Client : MonoSingleton<Client>
     bool isConnected = false;
     int retryCount = 0;
 
-    public FramePacket latestFramePacket;
+    Queue<InputPacket> pendingInputs = new Queue<InputPacket>();
+    Queue<FramePacket> pendingFrames = new Queue<FramePacket>();
 
     void Awake()
     {
@@ -31,7 +33,7 @@ public class Client : MonoSingleton<Client>
         if (!isConnected && accumulatedTime >= 3.0)
         {
             accumulatedTime -= 3.0;
-            if (!clientNetwork.Initialize(OnResponseReceived, Vector3i.FromVector3(Pos)))
+            if (!clientNetwork.Initialize(OnResponseReceived, OnFramePacketReceived, Pos.ToVector3i()))
             {
                 retryCount++;
                 if (retryCount == 3) EndEditor();
@@ -48,21 +50,27 @@ public class Client : MonoSingleton<Client>
 
         while (accumulatedTime >= FixedTimeStepSeconds)
         {
-            Tick();
+            if (!Tick())
+            {
+                break;
+            }
             accumulatedTime -= FixedTimeStepSeconds;
         }
     }
 
-    void Tick()
+    bool Tick()
     {
-        clientNetwork.SendLocalInput(CreateInputPacket());
-        if (!clientNetwork.TryReceiveFramePacket(out FramePacket framePacket))
+        clientNetwork.SendBytes(PacketCodec.InputPacketToBytes(CreateInputPacket()));
+
+        clientNetwork.TryReceiveFramePacket();
+        if (!TryGetLatestFramePacket(out FramePacket framePacket))
         {
-            return;
+            return false;
         }
-        latestFramePacket = framePacket;
-        simulator.SimulateFrame(latestFramePacket);
-        gameRenderer.WorldRendering(simulator.playerStates);
+
+        simulator.SimulateFrame(framePacket);
+        gameRenderer.RenderFrame(simulator.playerStates);
+        return true;
     }
 
     InputPacket CreateInputPacket()
@@ -88,6 +96,18 @@ public class Client : MonoSingleton<Client>
         };
     }
 
+    bool TryGetLatestFramePacket(out FramePacket framePacket)
+    {
+        if (pendingFrames.Count <= 0)
+        {
+            framePacket = default;
+            return false;
+        }
+
+        framePacket = pendingFrames.Dequeue();
+        return true;
+    }
+
     void OnResponseReceived(uint uid, ClientPos[] positions)
     {
         clientId = uid;
@@ -98,7 +118,12 @@ public class Client : MonoSingleton<Client>
         }
         simulator.SetGameState(positions);
         gameRenderer.AddLocalPlayerUnit(uid, this.gameObject);
-        gameRenderer.WorldRendering(simulator.playerStates);
+        gameRenderer.RenderFrame(simulator.playerStates);
+    }
+
+    void OnFramePacketReceived(byte[] framePacket)
+    {
+        pendingFrames.Enqueue(PacketCodec.BytesToFramePacket(framePacket));
     }
 
     void EndEditor()

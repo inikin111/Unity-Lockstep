@@ -14,7 +14,7 @@ public static class Program
 
         uint connectedClientCount = 0;
         const uint maxClients = 1;
-
+        const double fixedTimeStepSeconds = 1.0 / 30.0; // 30 ticks per second
         uint currentTick = 0;
         
         Dictionary<IPEndPoint, PendingClient> pendingConnections = new();
@@ -26,6 +26,12 @@ public static class Program
         // Stage 1: Wait for clients to connect and assign client IDs
         while (pendingConnections.Count < maxClients)
         {
+            Console.WriteLine("Waiting for clients to connect...");
+            if (server.Available <= 0)
+            {
+                Thread.Sleep(30);
+                continue;
+            }
             byte[] data = server.Receive(ref remote);
             if (data.Length > 0)
             {
@@ -55,6 +61,7 @@ public static class Program
             };
             byte[] responseData = PacketCodec.ACKPacketToBytes(responsePacket);
             server.Send(responseData, responseData.Length, connection.Key);
+            Console.WriteLine($"Sent connection response to {connection.Key.Address}:{connection.Key.Port}, assigned clientId={connection.Value.ClientId}");
         }
 
         Console.WriteLine("Server started on udp://127.0.0.1:5478");
@@ -63,6 +70,7 @@ public static class Program
         while (true)
         {
             // Stage 2: Receive input packets
+            Console.WriteLine("Waiting for input packets...");
             ReceiveInputPacket(server, ref remote, clients, inputsByTick);
 
             // Stage 3: Complete frame packets

@@ -5,7 +5,7 @@ public class GameRenderer : MonoSingleton<GameRenderer>
 {
     public GameObject playerPrefab;
     public Dictionary<uint, PlayerUnit> playerUnits = new Dictionary<uint, PlayerUnit>();
-    public void WorldRendering(Dictionary<uint, PlayerState> playerStates)
+    public void RenderFrame(Dictionary<uint, PlayerState> playerStates)
     {
         foreach (var IdAndState in playerStates)
         {

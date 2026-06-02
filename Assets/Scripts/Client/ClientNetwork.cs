@@ -2,6 +2,8 @@ using Lockstep.Packets;
 using System.Net;
 using System.Net.Sockets;
 using System;
+using UnityEngine;
+using System.Threading.Tasks;
 
 public class ClientNetwork 
 {
@@ -10,10 +12,12 @@ public class ClientNetwork
     UdpClient server;
     IPEndPoint receiveEndPoint = new IPEndPoint(IPAddress.Any, 0);
     Action<uint, ClientPos[]> onClientIdAssigned;
+    Action<byte[]> onFramePacketReceived;
 
-    public bool Initialize(Action<uint, ClientPos[]> onClientIdAssigned, Vector3i pos)
+    public bool Initialize(Action<uint, ClientPos[]> onClientIdAssigned, Action<byte[]> onFramePacketReceived, Vector3i pos)
     {
         this.onClientIdAssigned = onClientIdAssigned;
+        this.onFramePacketReceived = onFramePacketReceived;
         ConnectToServer();
         SendConnectionRequest(pos);
         if (!TryReceiveConnectionResponse()) return false;
@@ -23,12 +27,14 @@ public class ClientNetwork
 
     void ConnectToServer()
     {
+        Debug.Log($"Connecting to server at udp://{ServerIP}:{ServerPort}...");
         server = new UdpClient();
         server.Connect(ServerIP, ServerPort);
     }
 
     void SendConnectionRequest(Vector3i pos)
     {
+        Debug.Log($"Sending connection request with position {pos}...");
         ClientPos[] position = new ClientPos[1];
         position[0] = new ClientPos { clientId = 0, position = pos };
 
@@ -37,13 +43,26 @@ public class ClientNetwork
             clientId = 0,
             clientPos = position
         };
+        
         byte[] data = PacketCodec.ACKPacketToBytes(packet);
+
+        SendBytes(data);
+    }
+
+    public void SendBytes(byte[] data)
+    {
+        if (server == null)
+        {
+            throw new InvalidOperationException("ClientNetwork has not been initialized.");
+        }
+
         server.Send(data, data.Length);
     }
 
     bool TryReceiveConnectionResponse()
     {
-        if (server.Available > 0)
+        Debug.Log("Trying to receive connection response...");
+        while (server.Available >= 0)
         {
             IPEndPoint remote = receiveEndPoint;
             byte[] data = server.Receive(ref remote);
@@ -61,9 +80,26 @@ public class ClientNetwork
         return false;
     }
 
-    public bool TryReceiveFramePacket(out FramePacket framePacket)
+    async Task ReceiveFramePacketsAsync()
     {
-        framePacket = default;
+        while (true)
+        {
+            if (server.Available > 0)
+            {
+                IPEndPoint remote = receiveEndPoint;
+                byte[] data = server.Receive(ref remote);
+                receiveEndPoint = remote;
+                if (data.Length > 0)
+                {
+                    onFramePacketReceived?.Invoke(data);
+                }
+            }
+            await Task.Yield();
+        }
+    }
+
+    public bool TryReceiveFramePacket()
+    {
         if (server.Available <= 0)
         {
             return false;
@@ -77,19 +113,8 @@ public class ClientNetwork
         {
             return false;
         }
+        onFramePacketReceived?.Invoke(data);
 
-        framePacket = PacketCodec.BytesToFramePacket(data);
         return true;
-    }
-
-    public void SendLocalInput(InputPacket input)
-    {
-        if (server == null)
-        {
-            throw new InvalidOperationException("ClientNetwork has not been initialized.");
-        }
-
-        byte[] data = PacketCodec.InputPacketToBytes(input);
-        server.Send(data, data.Length);
     }
 }
