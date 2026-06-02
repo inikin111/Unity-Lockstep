@@ -13,7 +13,7 @@ public static class Program
         IPEndPoint remote = new IPEndPoint(IPAddress.Any, 0);
 
         uint connectedClientCount = 0;
-        const uint maxClients = 1;
+        const uint maxClients = 2;
         const double fixedTimeStepSeconds = 1.0 / 30.0; // 30 ticks per second
         uint currentTick = 0;
         

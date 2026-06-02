@@ -32,7 +32,7 @@ public class InputManager : MonoBehaviour
             if (Physics.Raycast(ray, out RaycastHit hit, Mathf.Infinity, groundLayerMask))
             {
                 Vector3 clickPosition = hit.point;
-                currentInput = clickPosition.ToVector3i();
+                currentInput = clickPosition.WithY(transform.position.y).ToVector3i();
                 hasInput = true;
             }
         }

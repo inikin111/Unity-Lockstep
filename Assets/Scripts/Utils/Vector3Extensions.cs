@@ -21,4 +21,9 @@ public static class Vector3Extensions
         }
         return current + (dir / dist) * maxDistanceDelta;
     }
+
+    public static Vector3 WithY(this Vector3 vec, float newY)
+    {
+        return new Vector3(vec.x, newY, vec.z);
+    }
 }

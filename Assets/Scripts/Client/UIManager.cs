@@ -3,8 +3,10 @@ using UnityEngine;
 
 public class UIManager : MonoSingleton<UIManager>
 {
+    uint clientId;
     [SerializeField] TextMeshProUGUI idText;
     [SerializeField] TextMeshProUGUI frameText;
+    [SerializeField] TextMeshProUGUI posText;
 
     void Awake()
     {
@@ -16,15 +18,30 @@ public class UIManager : MonoSingleton<UIManager>
         {
             Debug.LogError("Frame Text is not assigned in the inspector.");
         }
+        if (posText == null)
+        {
+            Debug.LogError("Position Text is not assigned in the inspector.");
+        }
     }
 
     public void SetClientId(uint clientId)
     {
+        this.clientId = clientId;
         idText.text = $"Client ID: {clientId}";
+    }
+
+    public uint GetClientId()
+    {
+        return clientId;
     }
 
     public void UpdateFrame(uint frame)
     {
         frameText.text = $"Current Frame: {frame}";
+    }
+
+    public void UpdatePosition(Vector3i position)
+    {
+        posText.text = $"Position: {position.ToString()}";
     }
 }
