@@ -54,6 +54,7 @@ public class Client : MonoSingleton<Client>
             {
                 break;
             }
+            UIManager.Instance.UpdateFrame(currentFrame);
             currentFrame++;
         }
     }
@@ -118,6 +119,7 @@ public class Client : MonoSingleton<Client>
     void OnResponseReceived(uint uid, ClientPos[] positions)
     {
         clientId = uid;
+        UIManager.Instance.SetClientId(clientId);
 
         foreach (var pos in positions)
         {
