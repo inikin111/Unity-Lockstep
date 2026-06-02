@@ -68,18 +68,6 @@ public class Simulator
         }
     }
 
-    public void SetPlayerState(uint clientId, CommandType commandType, Vector3i targetPosition, Vector3i localPosition)
-    {
-        PlayerState state = new()
-        {
-            commandType = commandType,
-            targetPosition = targetPosition,
-            localPosition = localPosition
-        };
-
-        playerStates[clientId] = state;
-    }
-
     public void SetGameState(ClientPos[] clientPositions)
     {
         foreach (ClientPos clientPos in clientPositions)
