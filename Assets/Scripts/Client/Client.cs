@@ -9,15 +9,14 @@ public class Client : MonoSingleton<Client>
     Vector3 Pos => gameObject.transform.position;
     readonly ClientNetwork clientNetwork = new ClientNetwork();
     readonly Simulator simulator = new Simulator();
-    public const int Scale = 1000;
-    public const double FixedTimeStepSeconds = 1.0 / 30.0; // 30 ticks per second
+    const uint InputDelay = 3;
+    const double FixedTimeStepSeconds = 1.0 / 30.0; // 30 ticks per second
     double accumulatedTime = 0.0;
-    uint currentInputTick = 0;
+    uint currentFrame = 0;
     uint clientId = 0;
     bool isConnected = false;
     int retryCount = 0;
 
-    Queue<InputPacket> pendingInputs = new Queue<InputPacket>();
     Queue<FramePacket> pendingFrames = new Queue<FramePacket>();
 
     void Awake()
@@ -50,18 +49,25 @@ public class Client : MonoSingleton<Client>
 
         while (accumulatedTime >= FixedTimeStepSeconds)
         {
+            accumulatedTime -= FixedTimeStepSeconds;
             if (!Tick())
             {
                 break;
             }
-            accumulatedTime -= FixedTimeStepSeconds;
+            currentFrame++;
         }
     }
 
     bool Tick()
     {
+        // 需要校验framePacket是否连续
         clientNetwork.SendBytes(PacketCodec.InputPacketToBytes(CreateInputPacket()));
-
+        Debug.Log($"[Client] Sent input for tick={currentFrame} to server.");
+        if (currentFrame < InputDelay)
+        {
+            currentFrame++;
+            return false;
+        }
         clientNetwork.TryReceiveFramePacket();
         if (!TryGetLatestFramePacket(out FramePacket framePacket))
         {
@@ -70,6 +76,7 @@ public class Client : MonoSingleton<Client>
 
         simulator.SimulateFrame(framePacket);
         gameRenderer.RenderFrame(simulator.playerStates);
+        Debug.Log($"[Client] Tick={framePacket.tick} simulated and rendered.");
         return true;
     }
 
@@ -81,7 +88,7 @@ public class Client : MonoSingleton<Client>
             return new InputPacket
             {
                 clientId = clientId,
-                tick = currentInputTick++,
+                tick = currentFrame + InputDelay,
                 inputPos = inputPosition,
                 commandType = CommandType.None
             };
@@ -90,7 +97,7 @@ public class Client : MonoSingleton<Client>
         return new InputPacket
         {
             clientId = clientId,
-            tick = currentInputTick++,
+            tick = currentFrame + InputDelay,
             inputPos = inputPosition,
             commandType = CommandType.Move
         };

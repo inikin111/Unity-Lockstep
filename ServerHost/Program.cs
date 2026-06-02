@@ -13,7 +13,7 @@ public static class Program
         IPEndPoint remote = new IPEndPoint(IPAddress.Any, 0);
 
         uint connectedClientCount = 0;
-        const uint maxClients = 1;
+        const uint maxClients = 2;
         const double fixedTimeStepSeconds = 1.0 / 30.0; // 30 ticks per second
         uint currentTick = 0;
         
@@ -66,25 +66,31 @@ public static class Program
 
         Console.WriteLine("Server started on udp://127.0.0.1:5478");
 
-        // TODO: 改成30tick每秒
+        Stopwatch stopwatch = Stopwatch.StartNew();
+        double accumulatedTime = 0;
+        long lastTime = stopwatch.ElapsedTicks;
+
         while (true)
         {
-            // Stage 2: Receive input packets
-            Console.WriteLine("Waiting for input packets...");
+            long currentTime = stopwatch.ElapsedTicks;
+            double deltaTime = (double)(currentTime - lastTime) / Stopwatch.Frequency;
+            lastTime = currentTime;
+            accumulatedTime += deltaTime;
+
             ReceiveInputPacket(server, ref remote, clients, inputsByTick);
 
-            // Stage 3: Complete frame packets
-            if (!TryGetCompleteFramePacket(currentTick, clients, inputsByTick, framePackets, out FramePacket framePacket))
+            if (accumulatedTime >= fixedTimeStepSeconds)
             {
-                Thread.Sleep(1);
-                continue;
+                accumulatedTime -= fixedTimeStepSeconds;
+
+                FramePacket framePacket = GetFramePacket(currentTick, clients, inputsByTick, framePackets);
+                SendFramePacket(server, clients, framePacket);
+
+                inputsByTick.Remove(currentTick);
+                currentTick++;
             }
 
-            // Stage 4: Broadcast frame packets
-            SendFramePacket(server, clients, framePacket);
-
-            inputsByTick.Remove(currentTick);
-            currentTick++;
+            Thread.Sleep(1);
         }
     }
 
@@ -111,7 +117,10 @@ public static class Program
 
             Console.WriteLine($"Receive input from {remote.Address}:{remote.Port}, clientId={packet.clientId}, tick={packet.tick}, input={packet.inputPos}");
 
-            clients[packet.clientId] = new IPEndPoint(remote.Address, remote.Port);
+            if (!clients.ContainsKey(packet.clientId))
+            {
+                clients[packet.clientId] = new IPEndPoint(remote.Address, remote.Port);
+            }
             CacheInput(inputsByTick, packet);
         }
     }
@@ -141,37 +150,43 @@ public static class Program
         tickInputs[packet.clientId] = packet;
     }
 
-    static bool TryGetCompleteFramePacket(
+    static FramePacket GetFramePacket(
         uint currentTick,
         Dictionary<uint, IPEndPoint> clients,
         Dictionary<uint, Dictionary<uint, InputPacket>> inputsByTick,
-        FramePacket[] framePackets,
-        out FramePacket framePacket)
+        FramePacket[] framePackets)
     {
-        framePacket = default;
-
-        if (clients.Count == 0)
-        {
-            return false;
-        }
-
         if (!inputsByTick.TryGetValue(currentTick, out Dictionary<uint, InputPacket>? tickInputs))
         {
-            return false;
+            tickInputs = new Dictionary<uint, InputPacket>();
         }
 
-        if (tickInputs.Count < clients.Count)
+        List<InputPacket> inputs = new List<InputPacket>();
+        foreach (var client in clients.OrderBy(c => c.Key))
         {
-            return false;
+            if (tickInputs.TryGetValue(client.Key, out InputPacket input))
+            {
+                inputs.Add(input);
+            }
+            else
+            {
+                inputs.Add(new InputPacket
+                {
+                    clientId = client.Key,
+                    tick = currentTick,
+                    inputPos = new Vector3i { x = 0, y = 0, z = 0 },
+                    commandType = CommandType.None
+                });
+            }
         }
 
-        framePacket = new FramePacket
+        FramePacket framePacket = new FramePacket
         {
             tick = currentTick,
-            inputs = tickInputs.Values.OrderBy(input => input.clientId).ToArray()
+            inputs = inputs.ToArray()
         };
 
         framePackets[currentTick % framePackets.Length] = framePacket;
-        return true;
+        return framePacket;
     }
 }

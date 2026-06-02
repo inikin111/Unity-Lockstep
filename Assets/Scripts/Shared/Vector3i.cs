@@ -18,12 +18,45 @@ public partial struct Vector3i
 
     public static Vector3i Zero => new Vector3i(0, 0, 0);
     public static Vector3i One => new Vector3i(Scale, Scale, Scale);
+
     public static int Distance(Vector3i a, Vector3i b)
+    {
+        int target = DistanceSquared(a, b);
+        if (target <= 0) return 0;
+
+        int res = 0;
+        // 找到最高位的初始掩码。对于32位正整数，最高有效位的平方根掩码从 1 << 15 开始
+        int bit = 1 << 30; 
+
+        // 先把 bit 缩放到不大于 target 的最大值
+        while (bit > target)
+        {
+            bit >>= 2;
+        }
+
+        // 逐位逼近
+        while (bit != 0)
+        {
+            if (target >= res + bit)
+            {
+                target -= res + bit;
+                res = (res >> 1) + bit;
+            }
+            else
+            {
+                res >>= 1;
+            }
+            bit >>= 2;
+        }
+        return res;
+    }
+
+    public static int DistanceSquared(Vector3i a, Vector3i b)
     {
         int dx = a.x - b.x;
         int dy = a.y - b.y;
         int dz = a.z - b.z;
-        return RoundToInt(Math.Sqrt((double)dx * dx + (double)dy * dy + (double)dz * dz));
+        return dx * dx + dy * dy + dz * dz;
     }
 
     public static Vector3i operator +(Vector3i a, Vector3i b)
