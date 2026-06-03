@@ -9,15 +9,51 @@ public struct PlayerState
     public Vector3i localPosition;
 }
 
+public struct GameState
+{
+    public PlayerState[] playerStates;
+}
+
 public class Simulator
 {    
     public Dictionary<uint, PlayerState> playerStates { get; private set; } = new Dictionary<uint, PlayerState>();
+    public Dictionary<uint, GameState> gameStateByTick { get; private set; } = new Dictionary<uint, GameState>();
     public const int FixedDeltaTimeMs = 33;
     public int moveSpeed = 50;
 
     public void SimulateFrame(FramePacket framePacket)
     {
         // UnityEngine.Debug.Log($"[Simulator] Tick={framePacket.tick}, inputCount={(framePacket.inputs == null ? 0 : framePacket.inputs.Length)}, playerCount={playerStates.Count}");
+        HandleFrameInputs(framePacket);
+        CalculateMovement();
+        CalculateCollision();
+    }
+
+    public void SetGameState(ClientPos[] clientPositions)
+    {
+        foreach (ClientPos clientPos in clientPositions)
+        {
+            if (!playerStates.TryGetValue(clientPos.clientId, out PlayerState playerState))
+            {
+                playerState = new PlayerState()
+                {
+                    commandType = CommandType.None,
+                    targetPosition = default,
+                    localPosition = clientPos.position
+                };
+            }
+            else
+            {
+                playerState.localPosition = clientPos.position;
+            }
+
+            playerStates[clientPos.clientId] = playerState;
+            UnityEngine.Debug.Log($"[Simulator] Sync clientId={clientPos.clientId}, position={clientPos.position}, commandType={playerState.commandType}");
+        }
+    }
+
+    void HandleFrameInputs(FramePacket framePacket)
+    {
         foreach (InputPacket input in framePacket.inputs)
         {
             if (!playerStates.TryGetValue(input.clientId, out PlayerState playerState))
@@ -38,7 +74,10 @@ public class Simulator
 
             UnityEngine.Debug.Log($"[Simulator] Input clientId={input.clientId}, commandType={input.commandType}, target={playerState.targetPosition}");
         }
+    }
 
+    void CalculateMovement()
+    {
         foreach (var clientId in playerStates.Keys.ToArray())
         {
             var state = playerStates[clientId];
@@ -68,26 +107,8 @@ public class Simulator
         }
     }
 
-    public void SetGameState(ClientPos[] clientPositions)
+    void CalculateCollision()
     {
-        foreach (ClientPos clientPos in clientPositions)
-        {
-            if (!playerStates.TryGetValue(clientPos.clientId, out PlayerState playerState))
-            {
-                playerState = new PlayerState()
-                {
-                    commandType = CommandType.None,
-                    targetPosition = default,
-                    localPosition = clientPos.position
-                };
-            }
-            else
-            {
-                playerState.localPosition = clientPos.position;
-            }
-
-            playerStates[clientPos.clientId] = playerState;
-            UnityEngine.Debug.Log($"[Simulator] Sync clientId={clientPos.clientId}, position={clientPos.position}, commandType={playerState.commandType}");
-        }
+        
     }
 }

@@ -9,7 +9,7 @@ public class Client : MonoSingleton<Client>
     Vector3 Pos => gameObject.transform.position;
     readonly ClientNetwork clientNetwork = new ClientNetwork();
     readonly Simulator simulator = new Simulator();
-    const uint InputDelay = 3;
+    const uint InputDelay = 2;
     const double FixedTimeStepSeconds = 1.0 / 30.0; // 30 ticks per second
     double accumulatedTime = 0.0;
     uint currentFrame = 0;
@@ -35,7 +35,7 @@ public class Client : MonoSingleton<Client>
             if (!clientNetwork.Initialize(OnResponseReceived, OnFramePacketReceived, Pos.ToVector3i()))
             {
                 retryCount++;
-                if (retryCount == 3) EndEditor();
+                if (retryCount == 3) EndGame();
                 return;
             }
             isConnected = true;
@@ -50,12 +50,12 @@ public class Client : MonoSingleton<Client>
         while (accumulatedTime >= FixedTimeStepSeconds)
         {
             accumulatedTime -= FixedTimeStepSeconds;
-            if (!Tick())
+            if (Tick())
             {
-                break;
+                UIManager.Instance.UpdateFrame(currentFrame);
+                currentFrame++;
             }
-            UIManager.Instance.UpdateFrame(currentFrame);
-            currentFrame++;
+            gameRenderer.RenderFrame(simulator.playerStates);
         }
     }
 
@@ -70,7 +70,7 @@ public class Client : MonoSingleton<Client>
             currentFrame++;
             return false;
         }
-        if (clientNetwork.TryReceivePacket())
+        if (!clientNetwork.TryReceivePacket())
         {
             return false;
         }
@@ -80,7 +80,7 @@ public class Client : MonoSingleton<Client>
         }
 
         simulator.SimulateFrame(framePacket);
-        gameRenderer.RenderFrame(simulator.playerStates);
+        
         Debug.Log($"[Client] Tick={framePacket.tick} simulated and rendered.");
         return true;
     }
@@ -122,8 +122,10 @@ public class Client : MonoSingleton<Client>
 
     void OnResponseReceived(byte[] data)
     {
+        Debug.Log("Received connection response from server.");
         ACKPacket packet = PacketCodec.ReadACKPacketBody(data);
         clientId = packet.clientId;
+        Debug.Log($"Assigned clientId={clientId} by server.");
         UIManager.Instance.SetClientId(clientId);
 
         foreach (var pos in packet.clientPos)
@@ -137,13 +139,15 @@ public class Client : MonoSingleton<Client>
 
     void OnFramePacketReceived(byte[] framePacket)
     {
-        pendingFrames.Enqueue(PacketCodec.BytesToFramePacket(framePacket));
+        pendingFrames.Enqueue(PacketCodec.ReadFramePacketBody(framePacket));
     }
 
-    void EndEditor()
+    void EndGame()
     {
 #if UNITY_EDITOR
         UnityEditor.EditorApplication.isPlaying = false;
+#else
+        Application.Quit();
 #endif
     }
 }

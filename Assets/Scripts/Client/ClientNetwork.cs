@@ -10,7 +10,7 @@ public class ClientNetwork
     const string ServerIP = "127.0.0.1";
     const int ServerPort = 5478;
     UdpClient server;
-    IPEndPoint receiveEndPoint = new IPEndPoint(IPAddress.Parse(ServerIP), ServerPort);
+    IPEndPoint receiveEndPoint = new IPEndPoint(IPAddress.Any, 0);
     Action<byte[]> onClientIdAssigned;
     Action<byte[]> onFramePacketReceived;
 
@@ -20,7 +20,13 @@ public class ClientNetwork
         this.onFramePacketReceived = onFramePacketReceived;
         ConnectToServer();
         SendConnectionRequest(pos);
-        if (!TryReceivePacket()) return false;
+        
+        // 持续尝试接收响应，直到收到为止
+        // 服务端需要等待所有客户端连接完成后才会发送响应
+        while (!TryReceivePacket())
+        {
+            System.Threading.Thread.Sleep(100);
+        }
 
         return true;
     }

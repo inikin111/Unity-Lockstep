@@ -135,7 +135,7 @@ namespace Lockstep.Packets
 
             return new ACKPacket
             {
-                clientId = BitConverter.ToUInt32(bytes, 0),
+                clientId = BitConverter.ToUInt32(bytes, offset),
                 clientPos = positions
             };
         }

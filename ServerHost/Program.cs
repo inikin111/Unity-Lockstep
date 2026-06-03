@@ -7,43 +7,34 @@ public static class Program
 {
     public record PendingClient(uint ClientId, Vector3i Position);
 
+    static Network? network;
+    static uint connectedClientCount = 0;
+    const uint maxClients = 1;
+    const double fixedTimeStepSeconds = 1.0 / 30.0; // 30 ticks per second
+    static uint currentTick = 0;
+    
+    static Dictionary<IPEndPoint, PendingClient> pendingConnections = new();
+    static Dictionary<uint, IPEndPoint> clients = new Dictionary<uint, IPEndPoint>();
+    static Dictionary<uint, Dictionary<uint, InputPacket>> inputsByTick = new Dictionary<uint, Dictionary<uint, InputPacket>>();
+    const uint maxBufferedFrames = 64;
+    static FramePacket[] framePackets = new FramePacket[maxBufferedFrames];
+
     public static void Main()
     {
-        using UdpClient server = new UdpClient(5478);
-        IPEndPoint remote = new IPEndPoint(IPAddress.Any, 0);
+        network = new Network();
+        framePackets = new FramePacket[maxBufferedFrames];
 
-        uint connectedClientCount = 0;
-        const uint maxClients = 2;
-        const double fixedTimeStepSeconds = 1.0 / 30.0; // 30 ticks per second
-        uint currentTick = 0;
-        
-        Dictionary<IPEndPoint, PendingClient> pendingConnections = new();
-        Dictionary<uint, IPEndPoint> clients = new Dictionary<uint, IPEndPoint>();
-        Dictionary<uint, Dictionary<uint, InputPacket>> inputsByTick = new Dictionary<uint, Dictionary<uint, InputPacket>>();
-        const uint maxBufferedFrames = 64;
-        FramePacket[] framePackets = new FramePacket[maxBufferedFrames]; 
+        network.Initialize(
+            OnConnectionRequest,
+            OnInputPacketReceived
+        );
 
         // Stage 1: Wait for clients to connect and assign client IDs
         while (pendingConnections.Count < maxClients)
         {
             Console.WriteLine("Waiting for clients to connect...");
-            if (server.Available <= 0)
-            {
-                Thread.Sleep(30);
-                continue;
-            }
-            byte[] data = server.Receive(ref remote);
-            if (data.Length > 0)
-            {
-                ACKPacket packet = PacketCodec.BytesToACKPacket(data);
-
-                connectedClientCount++;
-                uint clientId = connectedClientCount;
-                Console.WriteLine($"Assigning clientId={clientId} to {remote.Address}:{remote.Port}");
-                pendingConnections[remote] = new PendingClient(clientId, packet.clientPos[0].position);
-
-                Console.WriteLine($"Received connection request from {remote.Address}:{remote.Port}");
-            }
+            network.TryReceivePacket();
+            Thread.Sleep(30);
         }
 
         ClientPos[] positions = pendingConnections.Values.Select(connection => new ClientPos
@@ -60,7 +51,7 @@ public static class Program
                 clientPos = positions
             };
             byte[] responseData = PacketCodec.ACKPacketToBytes(responsePacket);
-            Network.SendPacket(PacketType.ACK, responseData, connection.Key);
+            network.SendPacket(PacketType.ACK, responseData, connection.Key);
             Console.WriteLine($"Sent connection response to {connection.Key.Address}:{connection.Key.Port}, assigned clientId={connection.Value.ClientId}");
         }
 
@@ -77,14 +68,14 @@ public static class Program
             lastTime = currentTime;
             accumulatedTime += deltaTime;
 
-            ReceiveInputPacket(server, ref remote, clients, inputsByTick);
+            network.TryReceivePacket();
 
             if (accumulatedTime >= fixedTimeStepSeconds)
             {
                 accumulatedTime -= fixedTimeStepSeconds;
 
                 FramePacket framePacket = GetFramePacket(currentTick, clients, inputsByTick, framePackets);
-                SendFramePacket(server, clients, framePacket);
+                SendFramePacket(network, clients, framePacket);
 
                 inputsByTick.Remove(currentTick);
                 currentTick++;
@@ -94,44 +85,55 @@ public static class Program
         }
     }
 
-    static void ReceiveInputPacket(
-        UdpClient server,
-        ref IPEndPoint remote,
-        Dictionary<uint, IPEndPoint> clients,
-        Dictionary<uint, Dictionary<uint, InputPacket>> inputsByTick) 
+    static void OnConnectionRequest(byte[] data, IPEndPoint remote)
     {
-        while (server.Available > 0)
+        // 检查是否已经处理过这个客户端的连接请求
+        if (pendingConnections.ContainsKey(remote))
         {
-            byte[] data = server.Receive(ref remote);
-
-            InputPacket packet;
-            try
-            {
-                packet = PacketCodec.BytesToInputPacket(data);
-            }
-            catch (Exception exception)
-            {
-                Console.WriteLine($"Invalid packet from {remote.Address}:{remote.Port}: {exception.Message}");
-                continue;
-            }
-
-            Console.WriteLine($"Receive input from {remote.Address}:{remote.Port}, clientId={packet.clientId}, tick={packet.tick}, input={packet.inputPos}");
-
-            if (!clients.ContainsKey(packet.clientId))
-            {
-                clients[packet.clientId] = new IPEndPoint(remote.Address, remote.Port);
-            }
-            CacheInput(inputsByTick, packet);
+            Console.WriteLine($"Ignoring duplicate connection request from {remote.Address}:{remote.Port}");
+            return;
         }
+
+        // 使用 ReadACKPacketBody 跳过包头解析数据
+        ACKPacket packet = PacketCodec.ReadACKPacketBody(data);
+
+        connectedClientCount++;
+        uint clientId = connectedClientCount;
+        Console.WriteLine($"Assigning clientId={clientId} to {remote.Address}:{remote.Port}");
+        pendingConnections[remote] = new PendingClient(clientId, packet.clientPos[0].position);
+
+        Console.WriteLine($"Received connection request from {remote.Address}:{remote.Port}");
     }
 
-    static void SendFramePacket(UdpClient server, Dictionary<uint, IPEndPoint> clients, FramePacket framePacket)
+    static void OnInputPacketReceived(byte[] data, IPEndPoint remote)
+    {
+        InputPacket packet;
+        try
+        {
+            packet = PacketCodec.ReadInputPacketBody(data);
+        }
+        catch (Exception exception)
+        {
+            Console.WriteLine($"Invalid packet from {remote.Address}:{remote.Port}: {exception.Message}");
+            return;
+        }
+
+        Console.WriteLine($"Receive input from {remote.Address}:{remote.Port}, clientId={packet.clientId}, tick={packet.tick}, input={packet.inputPos}");
+
+        if (!clients.ContainsKey(packet.clientId))
+        {
+            clients[packet.clientId] = new IPEndPoint(remote.Address, remote.Port);
+        }
+        CacheInput(inputsByTick, packet);
+    }
+
+    static void SendFramePacket(Network network, Dictionary<uint, IPEndPoint> clients, FramePacket framePacket)
     {
         if (clients.Count > 0)
         {
             foreach (IPEndPoint client in clients.Values)
             {
-                Network.SendPacket(PacketType.Frame, PacketCodec.FramePacketToBytes(framePacket), client);
+                network.SendPacket(PacketType.Frame, PacketCodec.FramePacketToBytes(framePacket), client);
             }
 
             Console.WriteLine($"Broadcast frame tick={framePacket.tick}, inputCount={framePacket.inputs.Length}");
