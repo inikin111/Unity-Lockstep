@@ -62,14 +62,18 @@ public class Client : MonoSingleton<Client>
     bool Tick()
     {
         // 需要校验framePacket是否连续
-        clientNetwork.SendBytes(PacketCodec.InputPacketToBytes(CreateInputPacket()));
+        clientNetwork.SendPacket(PacketType.Input, PacketCodec.InputPacketToBytes(CreateInputPacket()));
+
         Debug.Log($"[Client] Sent input for tick={currentFrame} to server.");
         if (currentFrame < InputDelay)
         {
             currentFrame++;
             return false;
         }
-        clientNetwork.TryReceiveFramePacket();
+        if (clientNetwork.TryReceivePacket())
+        {
+            return false;
+        }
         if (!TryGetLatestFramePacket(out FramePacket framePacket))
         {
             return false;
@@ -116,17 +120,18 @@ public class Client : MonoSingleton<Client>
         return true;
     }
 
-    void OnResponseReceived(uint uid, ClientPos[] positions)
+    void OnResponseReceived(byte[] data)
     {
-        clientId = uid;
+        ACKPacket packet = PacketCodec.ReadACKPacketBody(data);
+        clientId = packet.clientId;
         UIManager.Instance.SetClientId(clientId);
 
-        foreach (var pos in positions)
+        foreach (var pos in packet.clientPos)
         {
             Debug.Log($"Received client position from server. clientId={pos.clientId}, position=({pos.X}, {pos.Y}, {pos.Z})");
         }
-        simulator.SetGameState(positions);
-        gameRenderer.AddLocalPlayerUnit(uid, this.gameObject);
+        simulator.SetGameState(packet.clientPos);
+        gameRenderer.AddLocalPlayerUnit(packet.clientId, this.gameObject);
         gameRenderer.RenderFrame(simulator.playerStates);
     }
 

@@ -10,17 +10,17 @@ public class ClientNetwork
     const string ServerIP = "127.0.0.1";
     const int ServerPort = 5478;
     UdpClient server;
-    IPEndPoint receiveEndPoint = new IPEndPoint(IPAddress.Any, 0);
-    Action<uint, ClientPos[]> onClientIdAssigned;
+    IPEndPoint receiveEndPoint = new IPEndPoint(IPAddress.Parse(ServerIP), ServerPort);
+    Action<byte[]> onClientIdAssigned;
     Action<byte[]> onFramePacketReceived;
 
-    public bool Initialize(Action<uint, ClientPos[]> onClientIdAssigned, Action<byte[]> onFramePacketReceived, Vector3i pos)
+    public bool Initialize(Action<byte[]> onClientIdAssigned, Action<byte[]> onFramePacketReceived, Vector3i pos)
     {
         this.onClientIdAssigned = onClientIdAssigned;
         this.onFramePacketReceived = onFramePacketReceived;
         ConnectToServer();
         SendConnectionRequest(pos);
-        if (!TryReceiveConnectionResponse()) return false;
+        if (!TryReceivePacket()) return false;
 
         return true;
     }
@@ -43,9 +43,16 @@ public class ClientNetwork
             clientId = 0,
             clientPos = position
         };
-        
-        byte[] data = PacketCodec.ACKPacketToBytes(packet);
 
+        SendPacket(PacketType.ACK, PacketCodec.ACKPacketToBytes(packet));
+    }
+
+    public void SendPacket(PacketType packetType, byte[] payload)
+    {
+        byte[] header = PacketCodec.PacketHeaderToBytes(new PacketHeader { packetType = packetType });
+        byte[] data = new byte[header.Length + payload.Length];
+        Buffer.BlockCopy(header, 0, data, 0, header.Length);
+        Buffer.BlockCopy(payload, 0, data, header.Length, payload.Length);
         SendBytes(data);
     }
 
@@ -59,6 +66,43 @@ public class ClientNetwork
         server.Send(data, data.Length);
     }
 
+    public bool TryReceivePacket()
+    {
+        if (server.Available <= 0)
+        {
+            return false;
+        }
+
+        byte[] data = server.Receive(ref receiveEndPoint);
+
+        PacketHeader header = PacketCodec.ReadPacketHeaderFromBytes(data);
+
+        switch (header.packetType)
+        {
+            case PacketType.ACK:
+                ReceiveConnectionResponse(data);
+                break;
+            case PacketType.Frame:
+                ReceiveFramePacket(data);
+                break;
+            default:
+                Debug.LogWarning($"Received packet with unknown type: {header.packetType}");
+                return false;
+        }
+
+        return true;
+    }
+
+    void ReceiveConnectionResponse(byte[] data)
+    {
+        onClientIdAssigned?.Invoke(data);
+    }
+
+    void ReceiveFramePacket(byte[] data)
+    {
+        onFramePacketReceived?.Invoke(data);
+    }
+
     bool TryReceiveConnectionResponse()
     {
         Debug.Log("Trying to receive connection response...");
@@ -69,10 +113,7 @@ public class ClientNetwork
             receiveEndPoint = remote;
             if (data.Length > 0)
             {
-                ACKPacket responsePacket = PacketCodec.BytesToACKPacket(data);
-                uint assignedClientId = responsePacket.clientId;
-                ClientPos[] assignedPositions = responsePacket.clientPos;
-                onClientIdAssigned?.Invoke(assignedClientId, assignedPositions);
+                onClientIdAssigned?.Invoke(data);
                 return true;
             }
         }

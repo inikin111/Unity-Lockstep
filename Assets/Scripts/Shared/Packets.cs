@@ -9,6 +9,19 @@ namespace Lockstep.Packets
         None
     }
 
+    public enum PacketType : byte
+    {
+        Input,
+        Frame,
+        ACK
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public struct PacketHeader
+    {
+        public PacketType packetType;
+    }
+
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     // Clients send this to server
     public struct InputPacket

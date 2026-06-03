@@ -2,7 +2,7 @@ using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using Lockstep.Packets;
-
+namespace ServerHost;
 public static class Program
 {
     public record PendingClient(uint ClientId, Vector3i Position);
@@ -60,7 +60,7 @@ public static class Program
                 clientPos = positions
             };
             byte[] responseData = PacketCodec.ACKPacketToBytes(responsePacket);
-            server.Send(responseData, responseData.Length, connection.Key);
+            Network.SendPacket(PacketType.ACK, responseData, connection.Key);
             Console.WriteLine($"Sent connection response to {connection.Key.Address}:{connection.Key.Port}, assigned clientId={connection.Value.ClientId}");
         }
 
@@ -131,8 +131,7 @@ public static class Program
         {
             foreach (IPEndPoint client in clients.Values)
             {
-                byte[] data = PacketCodec.FramePacketToBytes(framePacket);
-                server.Send(data, data.Length, client);
+                Network.SendPacket(PacketType.Frame, PacketCodec.FramePacketToBytes(framePacket), client);
             }
 
             Console.WriteLine($"Broadcast frame tick={framePacket.tick}, inputCount={framePacket.inputs.Length}");
