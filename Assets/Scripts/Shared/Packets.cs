@@ -13,13 +13,30 @@ namespace Lockstep.Packets
     {
         Input,
         Frame,
-        ACK
+        ACK,
+        StateSync,
+        ResendFrame
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public struct PacketHeader
     {
         public PacketType packetType;
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public struct StateSyncPacket
+    {
+        public uint tick;
+        public GameState gameState;
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public struct ResendFramePacket
+    {
+        public uint lastReceivedTick;
+        public uint requestedTick;
+        public FramePacket[] framePackets;
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]

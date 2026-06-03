@@ -9,7 +9,8 @@ public struct PlayerState
     public Vector3i localPosition;
 
     // Collider Data : Assuming every Object has a BoxCollider and the Center is the same as the Position
-    public Vector3i colliderSize;
+    public Vector3i colliderSizes;
+    public int speed; // Horizontal
 }
 
 public struct EntityState
@@ -17,6 +18,7 @@ public struct EntityState
     public uint entityId;
     public Vector3i position;
     public Vector3i colliderSize; //  Still assuming that.
+    public int speed; // Horizontal
 }
 
 public struct GameState
@@ -30,8 +32,10 @@ public class Simulator
     public Dictionary<uint, PlayerState> playerStates { get; private set; } = new Dictionary<uint, PlayerState>();
     public Dictionary<uint, EntityState> entityStates { get; private set; } = new Dictionary<uint, EntityState>();
     public Dictionary<uint, GameState> gameStateByTick { get; private set; } = new Dictionary<uint, GameState>();
-    public const int FixedDeltaTimeMs = 33; // 1000 * 1 / 30
-    public int moveSpeed = 50;
+    const int FixedDeltaTimeMs = 33; // 1000 * 1 / 30
+    // 拿脚填的数值
+    int moveSpeed = 50;
+    int friction = 10;
 
     public void SimulateFrame(FramePacket framePacket)
     {
@@ -52,7 +56,8 @@ public class Simulator
                 {
                     commandType = CommandType.None,
                     targetPosition = default,
-                    localPosition = clientPos.position
+                    localPosition = clientPos.position,
+                    colliderSizes = new Vector3i(1, 1, 1)
                 };
             }
             else

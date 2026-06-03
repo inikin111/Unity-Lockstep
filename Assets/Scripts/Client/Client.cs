@@ -20,6 +20,7 @@ public class Client : MonoSingleton<Client>
     uint clientId = 0;
     bool isConnected = false;
     int retryCount = 0;
+    const int maxRetryCount = 3;
 
     Queue<FramePacket> pendingFrames = new Queue<FramePacket>();
 
@@ -36,13 +37,15 @@ public class Client : MonoSingleton<Client>
         if (!isConnected && accumulatedTime >= 3.0)
         {
             accumulatedTime -= 3.0;
+            // 根据当前状态判断一下是不是需要连接回复，如果中途加入直接同步状态了
             if (!clientNetwork.Initialize(OnResponseReceived, OnFramePacketReceived, Pos.ToVector3i()))
             {
                 retryCount++;
-                if (retryCount == 3) EndGame();
+                if (retryCount == maxRetryCount) EndGame();
                 return;
             }
             isConnected = true;
+            retryCount = 0;
             accumulatedTime = 0.0;
         }
 
@@ -76,8 +79,12 @@ public class Client : MonoSingleton<Client>
         }
         if (!clientNetwork.TryReceivePacket())
         {
+            retryCount++;
+            // if (retryCount == maxRetryCount) EndGame(); 断开连接
             return false;
         }
+        retryCount = 0;
+        // 改成获取当前帧的FramePacket，ai说：如果没有则继续等待（当前帧丢包了，等下一帧的FramePacket过来时再丢弃掉），如果等了很久都没有收到当前帧的FramePacket，则发起重传请求
         if (!TryGetLatestFramePacket(out FramePacket framePacket))
         {
             return false;
