@@ -27,7 +27,7 @@ public class GameRenderer : MonoSingleton<GameRenderer>
         Debug.Log($"Creating player unit for clientId={clientId}");
         GameObject playerUnitObj = Instantiate(playerPrefab);
         PlayerUnit playerUnit = playerUnitObj.AddComponent<PlayerUnit>();
-        playerUnit.clientId = clientId;
+        playerUnit.SetClientId(clientId);
         return playerUnit;
     }
 
@@ -44,7 +44,7 @@ public class GameRenderer : MonoSingleton<GameRenderer>
             playerUnit = playerObject.AddComponent<PlayerUnit>();
         }
 
-        playerUnit.clientId = clientId;
+        playerUnit.SetClientId(clientId);
         playerUnits[clientId] = playerUnit;
     }
 }

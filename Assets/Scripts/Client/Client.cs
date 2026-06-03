@@ -4,6 +4,10 @@ using System.Collections.Generic;
 
 public class Client : MonoSingleton<Client>
 {
+    // 客户端向服务端重连/中途加入
+    // 客户端未收到ACKPacket -> 客户端重试连接，超过次数则放弃
+    // 客户端未收到FramePacket -> 等待超时后重连转 case 1
+    // 客户端收到乱序FramePacket -> 发起重传请求，重传超时放弃
     InputManager inputManager;
     GameRenderer gameRenderer;
     Vector3 Pos => gameObject.transform.position;

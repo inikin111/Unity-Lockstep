@@ -3,8 +3,12 @@ using System.Net;
 using System.Net.Sockets;
 using Lockstep.Packets;
 namespace ServerHost;
+
 public static class Program
 {
+    // 服务端要处理的：
+    // 服务端处理客户端的重连/中途加入
+    // 服务端处理客户端的重传请求，重传超时则放弃
     public record PendingClient(uint ClientId, Vector3i Position);
 
     static Network? network;

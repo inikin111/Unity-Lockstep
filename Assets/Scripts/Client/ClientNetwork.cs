@@ -10,7 +10,7 @@ public class ClientNetwork
     const string ServerIP = "127.0.0.1";
     const int ServerPort = 5478;
     UdpClient server;
-    IPEndPoint receiveEndPoint = new IPEndPoint(IPAddress.Any, 0);
+    IPEndPoint receiveEndPoint = new IPEndPoint(IPAddress.Parse(ServerIP), ServerPort);
     Action<byte[]> onClientIdAssigned;
     Action<byte[]> onFramePacketReceived;
 

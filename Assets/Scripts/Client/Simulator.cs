@@ -7,18 +7,30 @@ public struct PlayerState
     public CommandType commandType;
     public Vector3i targetPosition;
     public Vector3i localPosition;
+
+    // Collider Data : Assuming every Object has a BoxCollider and the Center is the same as the Position
+    public Vector3i colliderSize;
+}
+
+public struct EntityState
+{
+    public uint entityId;
+    public Vector3i position;
+    public Vector3i colliderSize; //  Still assuming that.
 }
 
 public struct GameState
 {
     public PlayerState[] playerStates;
+    public EntityState[] entityStates;
 }
 
 public class Simulator
 {    
     public Dictionary<uint, PlayerState> playerStates { get; private set; } = new Dictionary<uint, PlayerState>();
+    public Dictionary<uint, EntityState> entityStates { get; private set; } = new Dictionary<uint, EntityState>();
     public Dictionary<uint, GameState> gameStateByTick { get; private set; } = new Dictionary<uint, GameState>();
-    public const int FixedDeltaTimeMs = 33;
+    public const int FixedDeltaTimeMs = 33; // 1000 * 1 / 30
     public int moveSpeed = 50;
 
     public void SimulateFrame(FramePacket framePacket)
@@ -27,6 +39,7 @@ public class Simulator
         HandleFrameInputs(framePacket);
         CalculateMovement();
         CalculateCollision();
+        SaveGameState(framePacket.tick);
     }
 
     public void SetGameState(ClientPos[] clientPositions)
@@ -110,5 +123,15 @@ public class Simulator
     void CalculateCollision()
     {
         
+    }
+
+    void SaveGameState(uint tick)
+    {
+
+    }
+
+    void LoadGameState(uint tick)
+    {
+
     }
 }
