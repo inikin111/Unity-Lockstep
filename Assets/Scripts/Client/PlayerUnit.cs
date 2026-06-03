@@ -6,7 +6,7 @@ public class PlayerUnit : MonoBehaviour
     [HideInInspector] public Vector3 colliderCenter = Vector3.zero;
     public Vector3 colliderSize = new Vector3(1, 1, 1);
 
-    uint clientId;
+    uint clientId; // 暂时不知道干啥，留着吧
     public Transform unitTr => transform;
 
     public void UpdatePosition(Vector3i pos)
