@@ -151,7 +151,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 64159a70879e6144a91c0ee12b74a432, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Client
-  entities: []
+  entities:
+  - {fileID: 1098895978}
 --- !u!4 &32476430
 Transform:
   m_ObjectHideFlags: 0
@@ -1064,6 +1065,17 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0, y: 0}
+--- !u!114 &1098895978 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 2909903589623590393, guid: 59f814ac0c8444f4983938b960d1fe6d, type: 3}
+  m_PrefabInstance: {fileID: 4811274803520126765}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c548439a9ca831342a2ec9065c851123, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EntityUnit
 --- !u!1 &1205221518
 GameObject:
   m_ObjectHideFlags: 0
@@ -1413,6 +1425,14 @@ PrefabInstance:
     - target: {fileID: 1632418582755569259, guid: 59f814ac0c8444f4983938b960d1fe6d, type: 3}
       propertyPath: m_Name
       value: SphereEntity
+      objectReference: {fileID: 0}
+    - target: {fileID: 2909903589623590393, guid: 59f814ac0c8444f4983938b960d1fe6d, type: 3}
+      propertyPath: mass
+      value: 15
+      objectReference: {fileID: 0}
+    - target: {fileID: 2909903589623590393, guid: 59f814ac0c8444f4983938b960d1fe6d, type: 3}
+      propertyPath: friciton
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4606226645334239677, guid: 59f814ac0c8444f4983938b960d1fe6d, type: 3}
       propertyPath: m_LocalPosition.x

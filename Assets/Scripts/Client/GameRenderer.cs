@@ -15,7 +15,6 @@ public class GameRenderer : MonoSingleton<GameRenderer>
     {
         RenderPlayers(gameState.playerStates);
         RenderEntities(gameState.entityStates);
-        CleanupInactive();
     }
     
     private void RenderPlayers(PlayerState[] playerStates)
@@ -27,9 +26,9 @@ public class GameRenderer : MonoSingleton<GameRenderer>
             uint clientId = playerState.clientId;
             
             activePlayerIds.Add(clientId);
-            
             if (!playerUnits.TryGetValue(clientId, out PlayerUnit playerUnit))
             {
+                Debug.Log("Create new Player Unit!");
                 playerUnit = CreatePlayerUnit(clientId);
                 playerUnits[clientId] = playerUnit;
             }
@@ -48,9 +47,9 @@ public class GameRenderer : MonoSingleton<GameRenderer>
         {
             uint entityId = entityState.entityId;
             activeEntityIds.Add(entityId);
-            
             if (!entityUnits.TryGetValue(entityId, out EntityUnit entityUnit))
             {
+                Debug.Log("Create new Entity Unit!");
                 entityUnit = CreateEntityUnit(entityId);
                 entityUnits[entityId] = entityUnit;
             }
@@ -67,6 +66,7 @@ public class GameRenderer : MonoSingleton<GameRenderer>
         GameObject playerUnitObj = Instantiate(playerPrefab);
         PlayerUnit playerUnit = playerUnitObj.GetOrAdd<PlayerUnit>();
         playerUnit.SetClientId(clientId);
+        activePlayerIds.Add(clientId);
         return playerUnit;
     }
     
@@ -76,6 +76,7 @@ public class GameRenderer : MonoSingleton<GameRenderer>
         GameObject entityUnitObj = Instantiate(entityPrefab);
         EntityUnit entityUnit = entityUnitObj.GetOrAdd<EntityUnit>();
         entityUnit.SetEntityId(entityId);
+        activeEntityIds.Add(entityId);
         return entityUnit;
     }
 
@@ -86,6 +87,7 @@ public class GameRenderer : MonoSingleton<GameRenderer>
         {
             if (!activePlayerIds.Contains(id))
             {
+                GameObject.Destroy(playerUnits[id].gameObject);
                 playerUnits.Remove(id);
             }
         }
@@ -94,6 +96,7 @@ public class GameRenderer : MonoSingleton<GameRenderer>
         {
             if (!activeEntityIds.Contains(id))
             {
+                GameObject.Destroy(entityUnits[id].gameObject);
                 entityUnits.Remove(id);
             }
         }
@@ -101,18 +104,31 @@ public class GameRenderer : MonoSingleton<GameRenderer>
 
     public void AddLocalPlayerUnit(uint clientId, GameObject playerObject)
     {
+        Debug.Log($"Adding local player unit for clientId={clientId}");
         if (playerUnits.ContainsKey(clientId))
         {
             Debug.LogWarning($"Player unit with clientId={clientId} already exists.");
             return;
         }
 
-        if (!playerObject.TryGetComponent(out PlayerUnit playerUnit))
-        {
-            playerUnit = playerObject.AddComponent<PlayerUnit>();
-        }
+        PlayerUnit playerUnit = playerObject.GetOrAdd<PlayerUnit>();
 
         playerUnit.SetClientId(clientId);
         playerUnits[clientId] = playerUnit;
+    }
+
+    public void AddLocalEntityUnits(EntityUnit[] entities)
+    {
+        Debug.Log($"Adding local entity units, count={entities.Length}");
+        foreach (var entity in entities)
+        {
+            uint entityId = entity.entityId;
+            if (entityUnits.ContainsKey(entityId))
+            {
+                Debug.LogWarning($"Entity unit with entityId={entityId} already exists.");
+                continue;
+            }
+            entityUnits[entityId] = entity;
+        }
     }
 }

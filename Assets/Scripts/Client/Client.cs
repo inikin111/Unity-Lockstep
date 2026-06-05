@@ -147,15 +147,21 @@ public class Client : MonoSingleton<Client>
         simulator.SetPlayerState(packet.clientPos);
         simulator.SetEntityState(CreateEntityStates());
         gameRenderer.AddLocalPlayerUnit(packet.clientId, this.gameObject);
+        gameRenderer.AddLocalEntityUnits(entities);
         gameRenderer.RenderFrame(simulator.gameStateHistory[currentFrame]);
     }
 
     EntityState[] CreateEntityStates()
     {
-        EntityState[] states = new EntityState[1];  
+        if (entities.Length == 0)
+        {
+            return new EntityState[0];
+        }
+        EntityState[] states = new EntityState[entities.Length];  
+        int index = 0;
         foreach (var entity in entities)
         {
-            states[0] = new EntityState
+            states[index++] = new EntityState
             {
                 entityId = entity.entityId,
                 position = entity.unitTr.position.ToVector3i(),
