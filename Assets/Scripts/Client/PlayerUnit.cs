@@ -20,6 +20,11 @@ public class PlayerUnit : MonoBehaviour
         this.clientId = clientId;
     }
 
+    public void UpdateColliderSize(Vector3i size)
+    {
+        colliderSize = size.ToVector3();
+    }
+
     void OnDrawGizmos()
     {
         Gizmos.color = Color.green;

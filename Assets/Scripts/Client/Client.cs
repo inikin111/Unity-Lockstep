@@ -8,6 +8,7 @@ public class Client : MonoSingleton<Client>
     // 客户端未收到ACKPacket -> 客户端重试连接，超过次数则放弃
     // 客户端未收到FramePacket -> 等待超时后重连转 case 1
     // 客户端收到乱序FramePacket -> 发起重传请求，重传超时放弃
+    public EntityUnit[] entities;
     InputManager inputManager;
     GameRenderer gameRenderer;
     Vector3 Pos => gameObject.transform.position;
@@ -62,7 +63,7 @@ public class Client : MonoSingleton<Client>
                 UIManager.Instance.UpdateFrame(currentFrame);
                 currentFrame++;
             }
-            gameRenderer.RenderFrame(simulator.playerStates);
+            gameRenderer.RenderFrame(simulator.gameStateHistory[currentFrame]);
         }
     }
 
@@ -143,9 +144,26 @@ public class Client : MonoSingleton<Client>
         {
             Debug.Log($"Received client position from server. clientId={pos.clientId}, position=({pos.X}, {pos.Y}, {pos.Z})");
         }
-        simulator.SetGameState(packet.clientPos);
+        simulator.SetPlayerState(packet.clientPos);
+        simulator.SetEntityState(CreateEntityStates());
         gameRenderer.AddLocalPlayerUnit(packet.clientId, this.gameObject);
-        gameRenderer.RenderFrame(simulator.playerStates);
+        gameRenderer.RenderFrame(simulator.gameStateHistory[currentFrame]);
+    }
+
+    EntityState[] CreateEntityStates()
+    {
+        EntityState[] states = new EntityState[1];  
+        foreach (var entity in entities)
+        {
+            states[0] = new EntityState
+            {
+                entityId = entity.entityId,
+                position = entity.unitTr.position.ToVector3i(),
+                colliderSize = entity.colliderSize.ToVector3i(),
+                physics = entity.SourcePhysics()
+            };
+        }
+        return states;
     }
 
     void OnFramePacketReceived(byte[] framePacket)

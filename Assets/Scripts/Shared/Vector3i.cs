@@ -84,16 +84,6 @@ public partial struct Vector3i
         return a.x * b.x + a.y * b.y + a.z * b.z;
     }
 
-    public static Vector3i Normalize(Vector3i a)
-    {
-        int length = RoundToInt(Math.Sqrt((double)a.x * a.x + (double)a.y * a.y + (double)a.z * a.z));
-        if (length > 0)
-        {
-            return a / length;
-        }
-        return Zero;
-    }
-
     public override string ToString()
     {
         return $"({x}, {y}, {z})";
