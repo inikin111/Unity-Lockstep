@@ -11,6 +11,7 @@ public class Client : MonoSingleton<Client>
     public EntityUnit[] entities;
     InputManager inputManager;
     GameRenderer gameRenderer;
+    PlayerUnit unit;
     Vector3 Pos => gameObject.transform.position;
     readonly ClientNetwork clientNetwork = new ClientNetwork();
     readonly Simulator simulator = new Simulator();
@@ -27,8 +28,9 @@ public class Client : MonoSingleton<Client>
 
     void Awake()
     {
-        inputManager = GetComponent<InputManager>();
-        gameRenderer = GetComponent<GameRenderer>();
+        inputManager = gameObject.GetOrAdd<InputManager>();
+        gameRenderer = gameObject.GetOrAdd<GameRenderer>();
+        unit= gameObject.GetOrAdd<PlayerUnit>();
     }
     
     void Update()
@@ -60,10 +62,10 @@ public class Client : MonoSingleton<Client>
             accumulatedTime -= FixedTimeStepSeconds;
             if (Tick())
             {
+                gameRenderer.RenderFrame(simulator.gameStateHistory[currentFrame]);
                 UIManager.Instance.UpdateFrame(currentFrame);
                 currentFrame++;
             }
-            gameRenderer.RenderFrame(simulator.gameStateHistory[currentFrame]);
         }
     }
 
@@ -75,6 +77,7 @@ public class Client : MonoSingleton<Client>
         Debug.Log($"[Client] Sent input for tick={currentFrame} to server.");
         if (currentFrame < InputDelay)
         {
+            simulator.CaptureGameState(currentFrame);
             currentFrame++;
             return false;
         }
@@ -142,10 +145,12 @@ public class Client : MonoSingleton<Client>
 
         foreach (var pos in packet.clientPos)
         {
-            Debug.Log($"Received client position from server. clientId={pos.clientId}, position=({pos.X}, {pos.Y}, {pos.Z})");
+            Debug.Log($"Received client position from server. clientId={pos.id}, position=({pos.X}, {pos.Y}, {pos.Z})");
         }
-        simulator.SetPlayerState(packet.clientPos);
+        simulator.SetPlayerState(CreatePlayerState(packet.clientPos));
         simulator.SetEntityState(CreateEntityStates());
+        simulator.SetEntityMotionConfigs(CreateEntityMotionConfigs());
+        simulator.CaptureGameState(currentFrame);
         gameRenderer.AddLocalPlayerUnit(packet.clientId, this.gameObject);
         gameRenderer.AddLocalEntityUnits(entities);
         gameRenderer.RenderFrame(simulator.gameStateHistory[currentFrame]);
@@ -164,12 +169,57 @@ public class Client : MonoSingleton<Client>
             states[index++] = new EntityState
             {
                 entityId = entity.entityId,
-                position = entity.unitTr.position.ToVector3i(),
-                colliderSize = entity.colliderSize.ToVector3i(),
-                physics = entity.SourcePhysics()
+                body = new CollisionBodyState
+                {
+                    position = entity.unitTr.position.ToVector3i(),
+                    colliderSize = entity.colliderSize.ToVector3i(),
+                    colliderRadius = entity.colliderRadius.ToFixedInt(),
+                    colliderType = ColliderType.Sphere
+                }
             };
         }
         return states;
+    }
+
+
+    PlayerState[] CreatePlayerState(ClientPos[] clientPos)
+    {
+        PlayerState[] players = new PlayerState[clientPos.Length];
+        int index = 0;
+        foreach (ClientPos client in clientPos)
+        {
+            players[index++] = new PlayerState
+            {
+                clientId = client.id,
+                commandType = CommandType.None,
+                targetPosition = Vector3i.Zero,
+                frameVelocity = Vector3i.Zero,
+                body = new CollisionBodyState
+                {
+                    position = client.position,
+                    colliderSize = new Vector3i(300, 300, 300),
+                    colliderRadius = unit.colliderRadius.ToFixedInt(),
+                    colliderType = ColliderType.Sphere
+                }
+            };
+        }
+        return players;
+    }
+
+    EntityMotionConfig[] CreateEntityMotionConfigs()
+    {
+        if (entities.Length == 0)
+        {
+            return new EntityMotionConfig[0];
+        }
+
+        EntityMotionConfig[] configs = new EntityMotionConfig[entities.Length];
+        int index = 0;
+        foreach (var entity in entities)
+        {
+            configs[index++] = entity.SourceMotionConfig();
+        }
+        return configs;
     }
 
     void OnFramePacketReceived(byte[] framePacket)

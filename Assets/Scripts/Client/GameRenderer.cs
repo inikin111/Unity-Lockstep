@@ -33,9 +33,9 @@ public class GameRenderer : MonoSingleton<GameRenderer>
                 playerUnits[clientId] = playerUnit;
             }
 
-            playerUnit.UpdatePosition(playerState.localPosition);
+            playerUnit.UpdatePosition(playerState.position);
             
-            playerUnit.UpdateColliderSize(playerState.colliderSizes);
+            playerUnit.UpdateColliderSize(playerState.colliderSize);
         }
     }
     

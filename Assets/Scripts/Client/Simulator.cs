@@ -1,72 +1,138 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Lockstep.Packets;
+
+public enum ColliderType
+{
+    Box,
+    Sphere
+}
+
+public struct CollisionBodyState
+{
+    public ColliderType colliderType;
+    public Vector3i position;
+    public Vector3i colliderSize;
+    public int colliderRadius;
+}
 
 public struct PlayerState
 {
     public uint clientId;
     public CommandType commandType;
     public Vector3i targetPosition;
-    public Vector3i localPosition;
-    // Collider Data : Assuming every Object has a BoxCollider and the Center is the same as the Position
-    public Vector3i colliderSizes;
+    public Vector3i frameVelocity;
+    public CollisionBodyState body;
+
+    public Vector3i position
+    {
+        readonly get => body.position;
+        set => body.position = value;
+    }
+
+    public Vector3i colliderSize
+    {
+        readonly get => body.colliderSize;
+        set => body.colliderSize = value;
+    }
+
+    public int colliderRadius
+    {
+        readonly get => body.colliderRadius;
+        set => body.colliderRadius = value;
+    }
 }
 
 public struct EntityState
 {
     public uint entityId;
-    public Vector3i position;
-    public Vector3i colliderSize; //  Still assuming that.
-    public EntityPhysics physics;
+    public CollisionBodyState body;
+
+    public Vector3i position
+    {
+        readonly get => body.position;
+        set => body.position = value;
+    }
+
+    public Vector3i colliderSize
+    {
+        readonly get => body.colliderSize;
+        set => body.colliderSize = value;
+    }
+
+    public int colliderRadius
+    {
+        readonly get => body.colliderRadius;
+        set => body.colliderRadius = value;
+    }
+}
+
+public struct EntityMotionConfig
+{
+    public uint entityId;
+    public bool isDynamic;
+    public int dragPermille;
+    public int maxSpeedPerTick;
+    public int pushImpulsePerCollision;
+    public int bouncinessPermille;
+}
+
+public struct EntityMotionFrame
+{
+    public uint entityId;
+    public Vector3i velocity;
 }
 
 public struct GameState
 {
     public PlayerState[] playerStates;
     public EntityState[] entityStates;
+    public EntityMotionFrame[] entityMotionFrames;
+}
+
+sealed class EntityMotionRuntime
+{
+    public bool isDynamic;
+    public int dragPerTick;
+    public int maxSpeedPerTick;
+    public int pushImpulsePerCollision;
+    public int bouncinessPermille;
+    public Vector3i velocity;
 }
 
 public class Simulator
-{    
+{
     public Dictionary<uint, PlayerState> playerStates { get; private set; } = new Dictionary<uint, PlayerState>();
     public Dictionary<uint, EntityState> entityStates { get; private set; } = new Dictionary<uint, EntityState>();
+    readonly Dictionary<uint, EntityMotionRuntime> entityMotionStates = new Dictionary<uint, EntityMotionRuntime>();
     // 模拟层保存10tick历史状态
     public RingBuffer<GameState> gameStateHistory = new RingBuffer<GameState>(10);
     // 拿脚填的数值
-    int moveSpeedPerTick = 50;
+    int moveSpeedPerTick = 200;
 
     public void SimulateFrame(FramePacket framePacket)
     {
         // UnityEngine.Debug.Log($"[Simulator] Tick={framePacket.tick}, inputCount={(framePacket.inputs == null ? 0 : framePacket.inputs.Length)}, playerCount={playerStates.Count}");
         ApplyFrameInputs(framePacket);
         CalculateMovement();
+        SimulateEntityMotion();
         CalculateCollision();
         SaveGameState(framePacket.tick);
     }
 
-    public void SetPlayerState(ClientPos[] clientPositions)
+    public void SetPlayerState(PlayerState[] players)
     {
-        foreach (ClientPos clientPos in clientPositions)
+        if (players.Length == 0)
         {
-            if (!playerStates.TryGetValue(clientPos.clientId, out PlayerState playerState))
-            {
-                playerState = new PlayerState()
-                {
-                    clientId = clientPos.clientId,
-                    commandType = CommandType.None,
-                    targetPosition = default,
-                    localPosition = clientPos.position,
-                    colliderSizes = new Vector3i(1, 1, 1)
-                };
-            }
-            else
-            {
-                playerState.localPosition = clientPos.position;
-                playerState.clientId = clientPos.clientId;
-            }
+            UnityEngine.Debug.LogWarning("No Player");
+            return;
+        }
 
-            playerStates[clientPos.clientId] = playerState;
-            UnityEngine.Debug.Log($"[Simulator] Sync clientId={clientPos.clientId}, position={clientPos.position}, commandType={playerState.commandType}");
+        foreach (PlayerState player in players)
+        {
+            playerStates[player.clientId] = player;
+            UnityEngine.Debug.Log($"[Simulator] Sync clientId={player.clientId}, commandType={player.commandType}");
         }
     }
 
@@ -74,23 +140,31 @@ public class Simulator
     {
         if (entities.Length == 0)
         {
-            UnityEngine.Debug.LogWarning("No Entities");
+            UnityEngine.Debug.LogWarning("No Entity");
             return;
         }
 
-        foreach (var entity in entities)
+        foreach (EntityState entity in entities)
         {
-            if (!entityStates.TryGetValue(entity.entityId, out var entityState))
+            entityStates[entity.entityId] = entity;
+        }
+    }
+
+    public void SetEntityMotionConfigs(EntityMotionConfig[] configs)
+    {
+        foreach (var config in configs)
+        {
+            if (!entityMotionStates.TryGetValue(config.entityId, out var runtime))
             {
-                entityState = entity;
+                runtime = new EntityMotionRuntime();
+                entityMotionStates[config.entityId] = runtime;
             }
-            else
-            {
-                entityState.position = entity.position;
-                entityState.colliderSize = entity.colliderSize;
-                entityState.physics = entity.physics;
-            }
-            entityStates[entity.entityId] = entityState;
+
+            runtime.isDynamic = config.isDynamic;
+            runtime.dragPerTick = Clamp(config.dragPermille, 0, 1000);
+            runtime.maxSpeedPerTick = Math.Max(0, config.maxSpeedPerTick);
+            runtime.pushImpulsePerCollision = Math.Max(0, config.pushImpulsePerCollision);
+            runtime.bouncinessPermille = Clamp(config.bouncinessPermille, 0, 1000);
         }
     }
 
@@ -109,6 +183,9 @@ public class Simulator
                     playerState.targetPosition = input.inputPos;
                     playerState.commandType = CommandType.Move;
                     break;
+                case CommandType.Cancel:
+                    playerState.commandType = CommandType.None;
+                    break;
                 case CommandType.None:
                     break;
             }
@@ -123,30 +200,49 @@ public class Simulator
         foreach (var clientId in playerStates.Keys.ToArray())
         {
             var state = playerStates[clientId];
+            state.frameVelocity = Vector3i.Zero;
 
             if (state.commandType == CommandType.Move)
             {
-                Vector3i delta = state.targetPosition - state.localPosition;
-                int distanceToTarget = Vector3i.Distance(state.localPosition, state.targetPosition);
+                Vector3i previousPosition = state.position;
+                Vector3i delta = state.targetPosition - state.position;
+                int distanceToTarget = Vector3i.Distance(state.position, state.targetPosition);
 
-                UnityEngine.Debug.Log($"[Simulator] Move clientId={clientId}, from={state.localPosition}, target={state.targetPosition}, delta={delta}, dist={distanceToTarget}, moveSpeedPerTick={moveSpeedPerTick}");
+                UnityEngine.Debug.Log($"[Simulator] Move clientId={clientId}, from={state.position}, target={state.targetPosition}, delta={delta}, dist={distanceToTarget}, moveSpeedPerTick={moveSpeedPerTick}");
 
                 if (distanceToTarget <= moveSpeedPerTick)
                 {
-                    state.localPosition = state.targetPosition; // 到达目标位置
+                    state.position = state.targetPosition; // 到达目标位置
                     state.commandType = CommandType.None; // 停止移动
-                    UnityEngine.Debug.Log($"[Simulator] Arrived clientId={clientId}, position={state.localPosition}");
+                    UnityEngine.Debug.Log($"[Simulator] Arrived clientId={clientId}, position={state.position}");
                 }
                 else
                 {
-                    // 原理：保持delta的方向不变，缩放delta使得它的长度等于moveSpeedPerTick
-                    Vector3i step = delta * moveSpeedPerTick / distanceToTarget;
-                    state.localPosition += step;
-                    UnityEngine.Debug.Log($"[Simulator] Step clientId={clientId}, step={step}, newPosition={state.localPosition}");
+                    Vector3i step = delta.ScaleTo(moveSpeedPerTick);
+                    state.position += step;
+                    UnityEngine.Debug.Log($"[Simulator] Step clientId={clientId}, step={step}, newPosition={state.position}");
                 }
 
-                playerStates[clientId] = state; // 写回
+                state.frameVelocity = state.position - previousPosition;
             }
+
+            playerStates[clientId] = state; // 写回
+        }
+    }
+
+    void SimulateEntityMotion()
+    {
+        foreach (var entityId in entityStates.Keys.ToArray())
+        {
+            if (!entityMotionStates.TryGetValue(entityId, out var motion) || !motion.isDynamic)
+            {
+                continue;
+            }
+
+            var state = entityStates[entityId]; 
+            motion.velocity = motion.velocity.MultiplyByScalar(1000 - Clamp(motion.dragPerTick, 0, 1000)).DivideByScalar(1000);
+            state.position += motion.velocity;
+            entityStates[entityId] = state;
         }
     }
 
@@ -155,8 +251,18 @@ public class Simulator
         gameStateHistory[tick] = new GameState
         {
             playerStates = playerStates.Values.ToArray(),
-            entityStates = entityStates.Values.ToArray()
+            entityStates = entityStates.Values.ToArray(),
+            entityMotionFrames = entityMotionStates.Select(pair => new EntityMotionFrame
+            {
+                entityId = pair.Key,
+                velocity = pair.Value.velocity
+            }).ToArray()
         };
+    }
+
+    public void CaptureGameState(uint tick)
+    {
+        SaveGameState(tick);
     }
 
     public void LoadGameState(uint tick)
@@ -170,6 +276,17 @@ public class Simulator
         foreach (EntityState entityState in gameStateHistory[tick].entityStates)
         {
             entityStates.Add(entityState.entityId, entityState);
+        }
+
+        foreach (EntityMotionFrame motionFrame in gameStateHistory[tick].entityMotionFrames ?? Array.Empty<EntityMotionFrame>())
+        {
+            if (!entityMotionStates.TryGetValue(motionFrame.entityId, out var runtime))
+            {
+                runtime = new EntityMotionRuntime();
+                entityMotionStates[motionFrame.entityId] = runtime;
+            }
+
+            runtime.velocity = motionFrame.velocity;
         }
     }
 
@@ -187,9 +304,9 @@ public class Simulator
                 PlayerState stateA = playerStates[playerA];
                 PlayerState stateB = playerStates[playerB];
                 
-                if (CheckOverlap(stateA, stateB))
+                if (CheckOverlapSphere(stateA.body, stateB.body))
                 {
-                    HandlePlayerPlayerCollision(playerA, playerB, ref stateA, ref stateB);
+                    HandlePlayerPlayerCollisionSphere(playerA, playerB, ref stateA, ref stateB);
                     playerStates[playerA] = stateA;
                     playerStates[playerB] = stateB;
                 }
@@ -206,9 +323,9 @@ public class Simulator
             foreach (uint entityId in entityIds)
             {
                 EntityState entity = entityStates[entityId];
-                if (CheckOverlap(player, entity))
+                if (CheckOverlapSphere(player.body, entity.body))
                 {
-                    HandlePlayerEntityCollision(playerId, entityId, ref player, ref entity);
+                    HandlePlayerEntityCollisionSphere(playerId, entityId, ref player, ref entity);
                     playerStates[playerId] = player;
                     entityStates[entityId] = entity;
                 }
@@ -227,272 +344,179 @@ public class Simulator
                 EntityState stateA = entityStates[entityA];
                 EntityState stateB = entityStates[entityB];
                 
-                // 只处理非静态物体之间的碰撞
-                if (!stateA.physics.isStatic || !stateB.physics.isStatic)
+                if (CheckOverlapSphere(stateA.body, stateB.body))
                 {
-                    if (CheckOverlap(stateA, stateB))
-                    {
-                        HandleEntityEntityCollision(entityA, entityB, ref stateA, ref stateB);
-                        entityStates[entityA] = stateA;
-                        entityStates[entityB] = stateB;
-                    }
+                    HandleEntityEntityCollisionSphere(entityA, entityB, ref stateA, ref stateB);
+                    entityStates[entityA] = stateA;
+                    entityStates[entityB] = stateB;
                 }
             }
         }
     }
 
-    bool CheckOverlap(PlayerState player1, PlayerState player2)
+    bool CheckOverlapSphere(CollisionBodyState body1, CollisionBodyState body2)
     {
-        return CheckOverlap(player1.localPosition, player1.colliderSizes, player2.localPosition, player2.colliderSizes);
+        int radiusSum = body1.colliderRadius + body2.colliderRadius;
+        return Vector3i.DistanceSquared(body1.position, body2.position) < (long)radiusSum * radiusSum;
     }
 
-    bool CheckOverlap(Vector3i center1, Vector3i colliderSize1, Vector3i center2, Vector3i colliderSize2)
+    void HandlePlayerPlayerCollisionSphere(uint playerA, uint playerB, ref PlayerState stateA, ref PlayerState stateB)
     {
-        Vector3i halfExtend1 = colliderSize1 / 2;
-        Vector3i halfExtend2 = colliderSize2 / 2;
-        return System.Math.Abs(center1.x - center2.x) <= halfExtend1.x + halfExtend2.x
-            && System.Math.Abs(center1.y - center2.y) <= halfExtend1.y + halfExtend2.y
-            && System.Math.Abs(center1.z - center2.z) <= halfExtend1.z + halfExtend2.z;
-    }
-
-    bool CheckOverlap(PlayerState player, EntityState entity)
-    {
-        return CheckOverlap(player.localPosition, player.colliderSizes, entity.position, entity.colliderSize);
-    }
-
-    bool CheckOverlap(EntityState entity1, EntityState entity2)
-    {
-        return CheckOverlap(entity1.position, entity1.colliderSize, entity2.position, entity2.colliderSize);
-    }
-
-    void HandlePlayerPlayerCollision(uint playerA, uint playerB, ref PlayerState stateA, ref PlayerState stateB)
-    {
-        // 计算碰撞法线和重叠深度
-        Vector3i diff = stateA.localPosition - stateB.localPosition;
-        Vector3i halfExtendA = stateA.colliderSizes / 2;
-        Vector3i halfExtendB = stateB.colliderSizes / 2;
-        
-        // 计算各轴的重叠深度
-        Vector3i overlap = halfExtendA + halfExtendB - new Vector3i(
-            System.Math.Abs(diff.x),
-            System.Math.Abs(diff.y),
-            System.Math.Abs(diff.z)
-        );
-        
-        // 找出最小的穿透方向（碰撞法线）
-        Vector3i separation = Vector3i.Zero;
-        if (overlap.x <= overlap.y && overlap.x <= overlap.z)
+        if (!TryGetSphereCollision(stateA.body, stateB.body, out Vector3i normal, out int penetration))
         {
-            int direction = diff.x > 0 ? 1 : -1;
-            separation = new Vector3i(direction * overlap.x, 0, 0);
+            return;
         }
-        else if (overlap.y <= overlap.z)
+
+        Vector3i separation = normal.ScaleTo(penetration);
+        Vector3i half = separation.DivideByScalar(2);
+        stateA.position -= half;
+        stateB.position += separation - half;
+        UnityEngine.Debug.Log($"[Collision] Player-Player Sphere: {playerA} <-> {playerB}");
+    }
+
+    void HandlePlayerEntityCollisionSphere(uint playerId, uint entityId, ref PlayerState player, ref EntityState entity)
+    {
+        if (!TryGetSphereCollision(player.body, entity.body, out Vector3i normal, out int penetration))
         {
-            int direction = diff.y > 0 ? 1 : -1;
-            separation = new Vector3i(0, direction * overlap.y, 0);
+            return;
+        }
+
+        Vector3i separation = normal.ScaleTo(penetration);
+        if (entityMotionStates.TryGetValue(entityId, out var motion) && motion.isDynamic)
+        {
+            Vector3i playerCorrection = separation.MultiplyByScalar(2).DivideByScalar(3);
+            Vector3i entityCorrection = separation - playerCorrection;
+            player.position -= playerCorrection;
+            entity.position += entityCorrection;
+            ApplyPlayerHitToEntity(player.frameVelocity, motion, normal);
         }
         else
         {
-            int direction = diff.z > 0 ? 1 : -1;
-            separation = new Vector3i(0, 0, direction * overlap.z);
+            player.position -= separation;
         }
-        
-        // 分离两个玩家（各移动一半重叠深度）
-        Vector3i halfSeparation = separation / 2;
-        stateA.localPosition += halfSeparation;
-        stateB.localPosition -= halfSeparation;
-        
-        UnityEngine.Debug.Log($"[Collision] Player-Player: {playerA} <-> {playerB}, separated by {separation}");
+
+        UnityEngine.Debug.Log($"[Collision] Player-Entity Sphere: playerId={playerId} <-> entityId={entityId}");
     }
     
-    void HandlePlayerEntityCollision(uint playerId, uint entityId, ref PlayerState player, ref EntityState entity)
+    void HandleEntityEntityCollisionSphere(uint entityA, uint entityB, ref EntityState stateA, ref EntityState stateB)
     {
-        if (entity.physics.isStatic)
+        if (!TryGetSphereCollision(stateA.body, stateB.body, out Vector3i normal, out int penetration))
         {
-            // 静态物体：将玩家推开
-            Vector3i diff = player.localPosition - entity.position;
-            Vector3i halfPlayerExtend = player.colliderSizes / 2;
-            Vector3i halfEntityExtend = entity.colliderSize / 2;
-            
-            // 计算重叠深度
-            Vector3i overlap = halfPlayerExtend + halfEntityExtend - new Vector3i(
-                System.Math.Abs(diff.x),
-                System.Math.Abs(diff.y),
-                System.Math.Abs(diff.z)
-            );
-            
-            // 找出最小穿透方向
-            Vector3i separation = Vector3i.Zero;
-            if (overlap.x <= overlap.y && overlap.x <= overlap.z)
-            {
-                int direction = diff.x > 0 ? 1 : -1;
-                separation = new Vector3i(direction * overlap.x, 0, 0);
-            }
-            else if (overlap.y <= overlap.z)
-            {
-                int direction = diff.y > 0 ? 1 : -1;
-                separation = new Vector3i(0, direction * overlap.y, 0);
-            }
-            else
-            {
-                int direction = diff.z > 0 ? 1 : -1;
-                separation = new Vector3i(0, 0, direction * overlap.z);
-            }
-            
-            // 将玩家移出碰撞区域
-            player.localPosition += separation;
-            
-            UnityEngine.Debug.Log($"[Collision] Player-Entity (static): Player {playerId} pushed by {separation}");
+            return;
         }
-        else
+
+        bool dynamicA = entityMotionStates.TryGetValue(entityA, out var motionA) && motionA.isDynamic;
+        bool dynamicB = entityMotionStates.TryGetValue(entityB, out var motionB) && motionB.isDynamic;
+
+        Vector3i separation = normal.ScaleTo(penetration);
+        if (dynamicA && dynamicB)
         {
-            // 动态物体：给物体施加力（玩家不受影响）
-            Vector3i diff = entity.position - player.localPosition;
-            int distance = Vector3i.Distance(player.localPosition, entity.position);
-            
-            if (distance > 0)
-            {
-                // 计算碰撞方向和力
-                Vector3i collisionDir = diff / distance;
-                Vector3i force = collisionDir * 100; // 推力大小
-                
-                // F = ma，所以 a = F/m
-                entity.physics.acceleration = force / entity.physics.mass;
-                
-                // 更新速度：v = v + a*dt（假设dt=1 tick）
-                entity.physics.velocity += entity.physics.acceleration;
-                
-                // 应用摩擦力
-                if (entity.physics.friction > 0)
-                {
-                    Vector3i friction = entity.physics.velocity * (-entity.physics.friction) / 100;
-                    entity.physics.velocity += friction;
-                }
-                
-                // 分离位置避免持续碰撞
-                Vector3i halfPlayerExtend = player.colliderSizes / 2;
-                Vector3i halfEntityExtend = entity.colliderSize / 2;
-                Vector3i overlap = halfPlayerExtend + halfEntityExtend - new Vector3i(
-                    System.Math.Abs(diff.x),
-                    System.Math.Abs(diff.y),
-                    System.Math.Abs(diff.z)
-                );
-                
-                Vector3i separation = Vector3i.Zero;
-                if (overlap.x <= overlap.y && overlap.x <= overlap.z)
-                {
-                    int direction = diff.x > 0 ? 1 : -1;
-                    separation = new Vector3i(direction * overlap.x, 0, 0);
-                }
-                else if (overlap.y <= overlap.z)
-                {
-                    int direction = diff.y > 0 ? 1 : -1;
-                    separation = new Vector3i(0, direction * overlap.y, 0);
-                }
-                else
-                {
-                    int direction = diff.z > 0 ? 1 : -1;
-                    separation = new Vector3i(0, 0, direction * overlap.z);
-                }
-                
-                entity.position += separation;
-                
-                UnityEngine.Debug.Log($"[Collision] Player-Entity (dynamic): Entity {entityId} pushed, force={force}");
-            }
+            Vector3i half = separation.DivideByScalar(2);
+            stateA.position -= half;
+            stateB.position += separation - half;
+            ResolveEntityCollision(motionA, motionB, normal);
         }
+        else if (dynamicA)
+        {
+            stateA.position -= separation;
+            ReflectDynamicEntityFromStatic(motionA, normal);
+        }
+        else if (dynamicB)
+        {
+            stateB.position += separation;
+            ReflectDynamicEntityFromStatic(motionB, -normal);
+        }
+
+        UnityEngine.Debug.Log($"[Collision] Entity-Entity Sphere: {entityA} <-> {entityB}");
     }
-    
-    void HandleEntityEntityCollision(uint entityA, uint entityB, ref EntityState stateA, ref EntityState stateB)
+
+    static bool TryGetSphereCollision(CollisionBodyState body1, CollisionBodyState body2, out Vector3i normal, out int penetration)
     {
-        // 计算碰撞参数
-        Vector3i diff = stateA.position - stateB.position;
-        int distance = Vector3i.Distance(stateA.position, stateB.position);
-        
-        if (distance == 0) return;
-        
-        Vector3i collisionNormal = diff / distance;
-        Vector3i halfExtendA = stateA.colliderSize / 2;
-        Vector3i halfExtendB = stateB.colliderSize / 2;
-        
-        // 计算重叠深度
-        Vector3i overlap = halfExtendA + halfExtendB - new Vector3i(
-            System.Math.Abs(diff.x),
-            System.Math.Abs(diff.y),
-            System.Math.Abs(diff.z)
-        );
-        
-        // 找出最小穿透方向
-        Vector3i separation = Vector3i.Zero;
-        if (overlap.x <= overlap.y && overlap.x <= overlap.z)
+        Vector3i delta = body2.position - body1.position;
+        int radiusSum = body1.colliderRadius + body2.colliderRadius;
+        int distance = Vector3i.Distance(body1.position, body2.position);
+
+        if (distance >= radiusSum)
         {
-            int direction = diff.x > 0 ? 1 : -1;
-            separation = new Vector3i(direction * overlap.x, 0, 0);
+            normal = Vector3i.Zero;
+            penetration = 0;
+            return false;
         }
-        else if (overlap.y <= overlap.z)
+
+        if (distance == 0)
         {
-            int direction = diff.y > 0 ? 1 : -1;
-            separation = new Vector3i(0, direction * overlap.y, 0);
+            normal = new Vector3i(Vector3i.Scale, 0, 0);
+            penetration = radiusSum;
+            return true;
         }
-        else
+
+        normal = delta.Normalize();
+        penetration = radiusSum - distance;
+        return true;
+    }
+
+    void ApplyPlayerHitToEntity(Vector3i playerVelocity, EntityMotionRuntime motion, Vector3i normal)
+    {
+        int approachSpeed = Vector3i.Dot(playerVelocity - motion.velocity, normal);
+        if (approachSpeed <= 0)
         {
-            int direction = diff.z > 0 ? 1 : -1;
-            separation = new Vector3i(0, 0, direction * overlap.z);
+            return;
         }
-        
-        // 根据质量分配分离距离
-        if (stateA.physics.isStatic)
+        int transferSpeed = approachSpeed * (Vector3i.Scale + motion.bouncinessPermille) / Vector3i.Scale;
+        int bounceSpeed = Math.Max(transferSpeed, motion.pushImpulsePerCollision);
+        Vector3i normalVelocity = normal.ScaleTo(Vector3i.Dot(motion.velocity, normal));
+        Vector3i tangentialVelocity = motion.velocity - normalVelocity.MultiplyByScalar(5);
+        motion.velocity = tangentialVelocity + normal.ScaleTo(bounceSpeed);
+        UnityEngine.Debug.Log($"[Collision] Player hit Entity: playerVelocity={playerVelocity}, entityVelocity={motion.velocity}, normal={normal}, approachSpeed={approachSpeed}, transferSpeed={transferSpeed}, bounceSpeed={bounceSpeed}");
+    }
+
+    void ResolveEntityCollision(EntityMotionRuntime motionA, EntityMotionRuntime motionB, Vector3i normal)
+    {
+        int normalSpeedA = Vector3i.Dot(motionA.velocity, normal);
+        int normalSpeedB = Vector3i.Dot(motionB.velocity, normal);
+        int approachSpeed = normalSpeedA - normalSpeedB;
+        if (approachSpeed <= 0)
         {
-            // A是静态的，只移动B
-            stateB.position -= separation;
+            return;
         }
-        else if (stateB.physics.isStatic)
+
+        int restitutionPermille = (motionA.bouncinessPermille + motionB.bouncinessPermille) / 2;
+        int minimumBounce = (motionA.pushImpulsePerCollision + motionB.pushImpulsePerCollision) / 2;
+        int restitutionApproach = Math.Max(approachSpeed * restitutionPermille / Vector3i.Scale, minimumBounce);
+
+        int newNormalSpeedA = (normalSpeedA + normalSpeedB - restitutionApproach) / 2;
+        int newNormalSpeedB = (normalSpeedA + normalSpeedB + restitutionApproach) / 2;
+
+        Vector3i normalVelocityA = normal.ScaleTo(normalSpeedA);
+        Vector3i normalVelocityB = normal.ScaleTo(normalSpeedB);
+        Vector3i tangentialVelocityA = motionA.velocity - normalVelocityA;
+        Vector3i tangentialVelocityB = motionB.velocity - normalVelocityB;
+
+        motionA.velocity = tangentialVelocityA + normal.ScaleTo(newNormalSpeedA);
+        motionB.velocity = tangentialVelocityB + normal.ScaleTo(newNormalSpeedB);
+        motionA.velocity = motionA.velocity.ClampMagnitude(motionA.maxSpeedPerTick);
+        motionB.velocity = motionB.velocity.ClampMagnitude(motionB.maxSpeedPerTick);
+    }
+
+    void ReflectDynamicEntityFromStatic(EntityMotionRuntime motion, Vector3i normal)
+    {
+        int approachSpeed = Vector3i.Dot(motion.velocity, normal);
+        if (approachSpeed <= 0)
         {
-            // B是静态的，只移动A
-            stateA.position += separation;
+            return;
         }
-        else
-        {
-            // 两个都是动态的，根据质量比例分配
-            int totalMass = stateA.physics.mass + stateB.physics.mass;
-            float ratioA = (float)stateB.physics.mass / totalMass;
-            float ratioB = (float)stateA.physics.mass / totalMass;
-            
-            stateA.position += separation * (int)(ratioA * 1000) / 1000;
-            stateB.position -= separation * (int)(ratioB * 1000) / 1000;
-            
-            // 动量守恒：计算新的速度
-            // v1_new = (v1*m1 - v2*m2 + 2*m2*v2) / (m1+m2)  (简化版本)
-            Vector3i relVel = stateA.physics.velocity - stateB.physics.velocity;
-            int velAlongNormal = relVel.x * collisionNormal.x + 
-                               relVel.y * collisionNormal.y + 
-                               relVel.z * collisionNormal.z;
-            
-            // 如果物体正在分离，不需要处理
-            if (velAlongNormal > 0) return;
-            
-            // 弹性碰撞系数
-            float restitution = 0.5f;
-            float j = -(1 + restitution) * velAlongNormal;
-            j /= (1f / stateA.physics.mass + 1f / stateB.physics.mass);
-            
-            Vector3i impulse = collisionNormal * (int)(j * 1000) / 1000;
-            
-            stateA.physics.velocity += impulse / stateA.physics.mass;
-            stateB.physics.velocity -= impulse / stateB.physics.mass;
-            
-            // 应用摩擦力
-            if (stateA.physics.friction > 0)
-            {
-                Vector3i frictionA = stateA.physics.velocity * (-stateA.physics.friction) / 100;
-                stateA.physics.velocity += frictionA;
-            }
-            if (stateB.physics.friction > 0)
-            {
-                Vector3i frictionB = stateB.physics.velocity * (-stateB.physics.friction) / 100;
-                stateB.physics.velocity += frictionB;
-            }
-        }
-        
-        UnityEngine.Debug.Log($"[Collision] Entity-Entity: {entityA} <-> {entityB}, handled");
+
+        int reflectionSpeed = Math.Max(approachSpeed * motion.bouncinessPermille / Vector3i.Scale, motion.pushImpulsePerCollision);
+        Vector3i normalVelocity = normal.ScaleTo(approachSpeed);
+        Vector3i tangentialVelocity = motion.velocity - normalVelocity;
+        motion.velocity = tangentialVelocity - normal.ScaleTo(reflectionSpeed);
+        motion.velocity = motion.velocity.ClampMagnitude(motion.maxSpeedPerTick);
+    }
+
+    static int Clamp(int value, int min, int max)
+    {
+        if (value < min) return min;
+        if (value > max) return max;
+        return value;
     }
 }

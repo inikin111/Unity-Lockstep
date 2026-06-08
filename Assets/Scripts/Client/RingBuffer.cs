@@ -5,7 +5,7 @@ public class RingBuffer<T>
     readonly T[] buffer;
     uint capacity => (uint)buffer.Length;
     uint latestTick = 0;
-    public uint EarliestTick => latestTick - capacity + 1;
+    public uint EarliestTick => latestTick - capacity;
     public RingBuffer(int capacity)
     {
         buffer = new T[capacity];
@@ -13,6 +13,10 @@ public class RingBuffer<T>
 
     public void Insert(uint index, T value)
     {
+        if (index > 10 && index < EarliestTick)
+        {
+            throw new InvalidOperationException($"Index {index} is too old. Earliest tick is {EarliestTick}.");
+        }
         latestTick = Math.Max(latestTick, index);
         uint modIndex = index % capacity;
         buffer[modIndex] = value;

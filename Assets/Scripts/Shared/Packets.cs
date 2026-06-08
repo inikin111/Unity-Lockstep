@@ -68,7 +68,7 @@ namespace Lockstep.Packets
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public struct ClientPos
     {
-        public uint clientId;
+        public uint id;
         public Vector3i position;
         public int X => position.x;
         public int Y => position.y;

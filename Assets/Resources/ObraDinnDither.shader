@@ -12,26 +12,38 @@ Shader "Custom/ObraDinnDither"
 
     SubShader
     {
-        Tags { "RenderType"="Opaque" }
+        Tags { "RenderType"="Opaque" "Queue"="Geometry" "RenderPipeline"="UniversalPipeline" }
 
         Pass
         {
+            Name "UniversalForward"
+            Tags { "LightMode"="UniversalForward" }
+
             HLSLPROGRAM
 
             #pragma vertex vert
             #pragma fragment frag
+            #pragma target 3.0
 
-            #include "UnityCG.cginc"
-            #include "Lighting.cginc"
-            #include "AutoLight.cginc"
+            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE _MAIN_LIGHT_SHADOWS_SCREEN
+            #pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
+            #pragma multi_compile_fragment _ _ADDITIONAL_LIGHT_SHADOWS
+            #pragma multi_compile_fragment _ _SHADOWS_SOFT
 
-            sampler2D _MainTex;
-            float4 _MainTex_ST;
-            float _Threshold;
-            float _LightIntensity;
-            float _AmbientLight;
-            float _ShadowStrength;
-            float _Contrast;
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+
+            TEXTURE2D(_MainTex);
+            SAMPLER(sampler_MainTex);
+
+            CBUFFER_START(UnityPerMaterial)
+                float4 _MainTex_ST;
+                float _Threshold;
+                float _LightIntensity;
+                float _AmbientLight;
+                float _ShadowStrength;
+                float _Contrast;
+            CBUFFER_END
 
             struct appdata
             {
@@ -47,18 +59,21 @@ Shader "Custom/ObraDinnDither"
                 float4 screenPos : TEXCOORD1;
                 float3 worldPos : TEXCOORD2;
                 float3 worldNormal : TEXCOORD3;
+                float4 shadowCoord : TEXCOORD4;
             };
 
             v2f vert(appdata v)
             {
                 v2f o;
+                VertexPositionInputs positionInputs = GetVertexPositionInputs(v.vertex.xyz);
+                VertexNormalInputs normalInputs = GetVertexNormalInputs(v.normal);
 
-                o.vertex = UnityObjectToClipPos(v.vertex);
+                o.vertex = positionInputs.positionCS;
                 o.uv = TRANSFORM_TEX(v.uv, _MainTex);
-
                 o.screenPos = ComputeScreenPos(o.vertex);
-                o.worldPos = mul(unity_ObjectToWorld, v.vertex).xyz;
-                o.worldNormal = UnityObjectToWorldNormal(v.normal);
+                o.worldPos = positionInputs.positionWS;
+                o.worldNormal = normalize(normalInputs.normalWS);
+                o.shadowCoord = GetShadowCoord(positionInputs);
 
                 return o;
             }
@@ -79,9 +94,22 @@ Shader "Custom/ObraDinnDither"
                 return bayer[y * 4 + x] / 16.0;
             }
 
-            fixed4 frag(v2f i) : SV_Target
+            float ComputeGray(float3 color)
             {
-                fixed4 col = tex2D(_MainTex, i.uv);
+                return dot(color, float3(0.299, 0.587, 0.114));
+            }
+
+            float EvaluateLightContribution(Light light, float3 normalWS)
+            {
+                float NdotL = saturate(dot(normalWS, light.direction));
+                float attenuation = light.distanceAttenuation * light.shadowAttenuation;
+                float intensity = ComputeGray(light.color);
+                return NdotL * attenuation * intensity;
+            }
+
+            half4 frag(v2f i) : SV_Target
+            {
+                float4 col = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.uv);
 
                 // 获取纹理的灰度值
                 float gray =
@@ -91,15 +119,20 @@ Shader "Custom/ObraDinnDither"
                 // 归一化法线
                 float3 normal = normalize(i.worldNormal);
 
-                // 计算主光源光照
-                float3 lightDir = normalize(_WorldSpaceLightPos0.xyz);
-                float NdotL = max(0, dot(normal, lightDir));
+                Light mainLight = GetMainLight(i.shadowCoord);
+                float totalDiffuse = EvaluateLightContribution(mainLight, normal);
 
-                // 计算漫反射光照
-                float diffuse = NdotL * _LightIntensity;
+                #ifdef _ADDITIONAL_LIGHTS
+                uint additionalLightsCount = GetAdditionalLightsCount();
+                for (uint lightIndex = 0; lightIndex < additionalLightsCount; ++lightIndex)
+                {
+                    Light additionalLight = GetAdditionalLight(lightIndex, i.worldPos);
+                    totalDiffuse += EvaluateLightContribution(additionalLight, normal);
+                }
+                #endif
 
                 // 添加环境光
-                float totalLight = diffuse + _AmbientLight;
+                float totalLight = totalDiffuse * _LightIntensity + _AmbientLight;
 
                 // 应用对比度增强光照效果
                 totalLight = (totalLight - 0.5) * _Contrast + 0.5;

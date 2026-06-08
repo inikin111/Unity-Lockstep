@@ -1,24 +1,30 @@
 using UnityEngine;
 
-public struct EntityPhysics
+[System.Serializable]
+public class EntityMotionProfile
 {
-    public Vector3i velocity;
-    public Vector3i acceleration;
-    public int mass;
-    public int friction;
-    public bool isStatic;
+    [InspectorName("Dynamic motion")]
+    public bool isDynamic = true;
+
+    [Range(0, 1000)]
+    public int dragPermille = 180;
+
+    public int maxSpeedPerTick = 120;
+    public int pushImpulsePerCollision = 90;
+
+    [Range(0, 1000)]
+    public int bouncinessPermille = 120;
 }
 
 public class EntityUnit : MonoBehaviour
 {
-    [InspectorName("Physics settings")]
-    public int mass = 10;
-    public int friciton = 5;
-    public bool isStatic = false;
-
     [InspectorName("Collider Settings")]
     [HideInInspector] public Vector3 colliderCenter = Vector3.zero;
     public Vector3 colliderSize = new Vector3(1, 1, 1);
+    public float colliderRadius = 0.5f;
+
+    [InspectorName("Experience Motion")]
+    public EntityMotionProfile motion = new EntityMotionProfile();
     
     public uint entityId;
     public Transform unitTr => transform;
@@ -38,15 +44,16 @@ public class EntityUnit : MonoBehaviour
         colliderSize = size.ToVector3();
     }
 
-    public EntityPhysics SourcePhysics()
+    public EntityMotionConfig SourceMotionConfig()
     {
-        return new EntityPhysics
+        return new EntityMotionConfig
         {
-            velocity = Vector3i.Zero,
-            acceleration = Vector3i.Zero,
-            mass = mass,
-            friction = friciton,
-            isStatic = isStatic
+            entityId = entityId,
+            isDynamic = motion.isDynamic,
+            dragPermille = motion.dragPermille,
+            maxSpeedPerTick = motion.maxSpeedPerTick,
+            pushImpulsePerCollision = motion.pushImpulsePerCollision,
+            bouncinessPermille = motion.bouncinessPermille
         };
     }
 
@@ -55,6 +62,8 @@ public class EntityUnit : MonoBehaviour
         // 用不同颜色显示物体碰撞体
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireCube(transform.position + colliderCenter, colliderSize);
+        Gizmos.color = Color.cyan;
+        Gizmos.DrawWireSphere(transform.position + colliderCenter, colliderRadius);
         
         // 显示物体ID
         #if UNITY_EDITOR

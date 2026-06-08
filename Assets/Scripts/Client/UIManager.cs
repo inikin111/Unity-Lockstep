@@ -6,7 +6,6 @@ public class UIManager : MonoSingleton<UIManager>
     uint clientId;
     [SerializeField] TextMeshProUGUI idText;
     [SerializeField] TextMeshProUGUI frameText;
-    [SerializeField] TextMeshProUGUI posText;
 
     void Awake()
     {
@@ -17,10 +16,6 @@ public class UIManager : MonoSingleton<UIManager>
         if (frameText == null)
         {
             Debug.LogError("Frame Text is not assigned in the inspector.");
-        }
-        if (posText == null)
-        {
-            Debug.LogError("Position Text is not assigned in the inspector.");
         }
     }
 
@@ -38,10 +33,5 @@ public class UIManager : MonoSingleton<UIManager>
     public void UpdateFrame(uint frame)
     {
         frameText.text = $"Current Frame: {frame}";
-    }
-
-    public void UpdatePosition(Vector3i position)
-    {
-        posText.text = $"Position: {position.ToString()}";
     }
 }

@@ -89,7 +89,7 @@ namespace Lockstep.Packets
             for (int i = 0; i < packet.clientPos.Length; i++)
             {
                 int offset = ACKPacketHeaderLength + i * ClientPosLength;
-                Buffer.BlockCopy(BitConverter.GetBytes(packet.clientPos[i].clientId), 0, bytes, offset, sizeof(uint));
+                Buffer.BlockCopy(BitConverter.GetBytes(packet.clientPos[i].id), 0, bytes, offset, sizeof(uint));
                 offset += sizeof(uint);
                 Buffer.BlockCopy(BitConverter.GetBytes(packet.clientPos[i].X), 0, bytes, offset, sizeof(int));
                 offset += sizeof(int);
@@ -123,7 +123,7 @@ namespace Lockstep.Packets
             {
                 positions[i] = new ClientPos
                 {
-                    clientId = BitConverter.ToUInt32(bytes, offset + ACKPacketHeaderLength + i * ClientPosLength),
+                    id = BitConverter.ToUInt32(bytes, offset + ACKPacketHeaderLength + i * ClientPosLength),
                     position = new Vector3i
                     {
                         x = BitConverter.ToInt32(bytes, offset + ACKPacketHeaderLength + i * ClientPosLength + sizeof(uint)),

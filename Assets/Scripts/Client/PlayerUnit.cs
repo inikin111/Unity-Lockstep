@@ -5,6 +5,7 @@ public class PlayerUnit : MonoBehaviour
     [InspectorName("Collider Settings")]
     [HideInInspector] public Vector3 colliderCenter = Vector3.zero;
     public Vector3 colliderSize = new Vector3(1, 1, 1);
+    public float colliderRadius = 0.3f;
 
     uint clientId; // 暂时不知道干啥，留着吧
     public Transform unitTr => transform;
@@ -29,5 +30,7 @@ public class PlayerUnit : MonoBehaviour
     {
         Gizmos.color = Color.green;
         Gizmos.DrawWireCube(transform.position + colliderCenter, colliderSize);
+        Gizmos.color = Color.antiqueWhite;
+        Gizmos.DrawWireSphere(transform.position + colliderCenter, colliderRadius);
     }
 }

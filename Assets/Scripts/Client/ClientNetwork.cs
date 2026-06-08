@@ -42,7 +42,7 @@ public class ClientNetwork
     {
         Debug.Log($"Sending connection request with position {pos}...");
         ClientPos[] position = new ClientPos[1];
-        position[0] = new ClientPos { clientId = 0, position = pos };
+        position[0] = new ClientPos { id = 0, position = pos };
 
         ACKPacket packet = new ACKPacket
         {
