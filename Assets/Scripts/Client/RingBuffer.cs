@@ -1,10 +1,11 @@
 using System;
-using System.Collections.Generic;
 
 public class RingBuffer<T>
 {
     readonly T[] buffer;
     uint capacity => (uint)buffer.Length;
+    uint latestTick = 0;
+    public uint EarliestTick => latestTick - capacity + 1;
     public RingBuffer(int capacity)
     {
         buffer = new T[capacity];
@@ -12,6 +13,7 @@ public class RingBuffer<T>
 
     public void Insert(uint index, T value)
     {
+        latestTick = Math.Max(latestTick, index);
         uint modIndex = index % capacity;
         buffer[modIndex] = value;
     }
