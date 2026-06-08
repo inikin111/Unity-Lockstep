@@ -13,7 +13,7 @@ public class RingBuffer<T>
 
     public void Insert(uint index, T value)
     {
-        if (index > 10 && index < EarliestTick)
+        if (index > capacity && index < EarliestTick)
         {
             throw new InvalidOperationException($"Index {index} is too old. Earliest tick is {EarliestTick}.");
         }

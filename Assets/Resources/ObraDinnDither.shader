@@ -60,6 +60,7 @@ Shader "Custom/ObraDinnDither"
                 float3 worldPos : TEXCOORD2;
                 float3 worldNormal : TEXCOORD3;
                 float4 shadowCoord : TEXCOORD4;
+                float3 vertexLighting : TEXCOORD5;
             };
 
             v2f vert(appdata v)
@@ -74,6 +75,7 @@ Shader "Custom/ObraDinnDither"
                 o.worldPos = positionInputs.positionWS;
                 o.worldNormal = normalize(normalInputs.normalWS);
                 o.shadowCoord = GetShadowCoord(positionInputs);
+                o.vertexLighting = VertexLighting(positionInputs.positionWS, normalInputs.normalWS);
 
                 return o;
             }
@@ -129,6 +131,10 @@ Shader "Custom/ObraDinnDither"
                     Light additionalLight = GetAdditionalLight(lightIndex, i.worldPos);
                     totalDiffuse += EvaluateLightContribution(additionalLight, normal);
                 }
+                #endif
+
+                #ifdef _ADDITIONAL_LIGHTS_VERTEX
+                totalDiffuse += ComputeGray(i.vertexLighting);
                 #endif
 
                 // 添加环境光

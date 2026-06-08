@@ -35,28 +35,13 @@ public class Client : MonoSingleton<Client>
     
     void Update()
     {
-        accumulatedTime += Time.deltaTime;
-
-        if (!isConnected && accumulatedTime >= 3.0)
-        {
-            accumulatedTime -= 3.0;
-            // 根据当前状态判断一下是不是需要连接回复，如果中途加入直接同步状态了
-            if (!clientNetwork.Initialize(OnResponseReceived, OnFramePacketReceived, Pos.ToVector3i()))
-            {
-                retryCount++;
-                if (retryCount == maxRetryCount) EndGame();
-                return;
-            }
-            isConnected = true;
-            retryCount = 0;
-            accumulatedTime = 0.0;
-        }
-
         if (!isConnected)
         {
+            // 根据当前状态判断一下是不是需要连接回复，如果中途加入直接同步状态了
+            clientNetwork.Initialize(OnResponseReceived, OnFramePacketReceived, Pos.ToVector3i());
             return;
         }
-
+        accumulatedTime += Time.deltaTime;
         while (accumulatedTime >= FixedTimeStepSeconds)
         {
             accumulatedTime -= FixedTimeStepSeconds;
@@ -97,6 +82,7 @@ public class Client : MonoSingleton<Client>
         simulator.SimulateFrame(framePacket);
         
         Debug.Log($"[Client] Tick={framePacket.tick} simulated and rendered.");
+        Debug.Log($"[Client] {pendingFrames.Count} pending frames remain.");
         return true;
     }
 
@@ -154,6 +140,8 @@ public class Client : MonoSingleton<Client>
         gameRenderer.AddLocalPlayerUnit(packet.clientId, this.gameObject);
         gameRenderer.AddLocalEntityUnits(entities);
         gameRenderer.RenderFrame(simulator.gameStateHistory[currentFrame]);
+
+        isConnected = true;
     }
 
     EntityState[] CreateEntityStates()

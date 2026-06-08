@@ -4,6 +4,8 @@ using System.Net.Sockets;
 using System;
 using UnityEngine;
 using System.Threading.Tasks;
+using System.Threading;
+using System.Collections.Concurrent;
 
 public class ClientNetwork 
 {
@@ -13,6 +15,11 @@ public class ClientNetwork
     IPEndPoint receiveEndPoint = new IPEndPoint(IPAddress.Parse(ServerIP), ServerPort);
     Action<byte[]> onClientIdAssigned;
     Action<byte[]> onFramePacketReceived;
+    CancellationTokenSource receiveCts;
+    Task receiveTask;
+    ConcurrentQueue<byte[]> framePacketQueue = new ConcurrentQueue<byte[]>();
+    ConcurrentQueue<byte[]> connectionResponseQueue = new ConcurrentQueue<byte[]>();
+    public ConcurrentQueue<byte[]> pendingPackets = new ConcurrentQueue<byte[]>();
 
     public bool Initialize(Action<byte[]> onClientIdAssigned, Action<byte[]> onFramePacketReceived, Vector3i pos)
     {
@@ -20,13 +27,6 @@ public class ClientNetwork
         this.onFramePacketReceived = onFramePacketReceived;
         ConnectToServer();
         SendConnectionRequest(pos);
-        
-        // 持续尝试接收响应，直到收到为止
-        // 服务端需要等待所有客户端连接完成后才会发送响应
-        while (!TryReceivePacket())
-        {
-            System.Threading.Thread.Sleep(100);
-        }
 
         return true;
     }
@@ -36,6 +36,7 @@ public class ClientNetwork
         Debug.Log($"Connecting to server at udp://{ServerIP}:{ServerPort}...");
         server = new UdpClient();
         server.Connect(ServerIP, ServerPort);
+        StartReceivingPacket();
     }
 
     void SendConnectionRequest(Vector3i pos)
@@ -72,96 +73,51 @@ public class ClientNetwork
         server.Send(data, data.Length);
     }
 
-    public bool TryReceivePacket()
+    void StartReceivingPacket()
     {
-        if (server.Available <= 0)
+        receiveCts = new CancellationTokenSource();
+        receiveTask = ReceivePacket(receiveCts);
+    }
+
+    async Task ReceivePacket(CancellationTokenSource cts)
+    {
+        while (!cts.Token.IsCancellationRequested)
         {
-            return false;
+            UdpReceiveResult result = await server.ReceiveAsync();
+            byte[] data = result.Buffer;
+
+            if (data == null || data.Length == 0)
+            {
+                continue;
+            }
+
+            pendingPackets.Enqueue(data);
+            // PacketHeader header = PacketCodec.ReadPacketHeaderFromBytes(data);
+
+            // switch (header.packetType)
+            // {
+            //     case PacketType.ACK:
+            //         ReceiveConnectionResponse(data);
+            //         break;
+            //     case PacketType.Frame:
+            //         ReceiveFramePacket(data);
+            //         break;
+            //     default:
+            //         Debug.LogWarning($"Received packet with unknown type: {header.packetType}");
+            //         break;
+            // }
         }
-
-        byte[] data = server.Receive(ref receiveEndPoint);
-
-        PacketHeader header = PacketCodec.ReadPacketHeaderFromBytes(data);
-
-        switch (header.packetType)
-        {
-            case PacketType.ACK:
-                ReceiveConnectionResponse(data);
-                break;
-            case PacketType.Frame:
-                ReceiveFramePacket(data);
-                break;
-            default:
-                Debug.LogWarning($"Received packet with unknown type: {header.packetType}");
-                return false;
-        }
-
-        return true;
     }
 
     void ReceiveConnectionResponse(byte[] data)
     {
+        connectionResponseQueue.Enqueue(data);
         onClientIdAssigned?.Invoke(data);
     }
 
     void ReceiveFramePacket(byte[] data)
     {
+        framePacketQueue.Enqueue(data);
         onFramePacketReceived?.Invoke(data);
-    }
-
-    bool TryReceiveConnectionResponse()
-    {
-        Debug.Log("Trying to receive connection response...");
-        while (server.Available >= 0)
-        {
-            IPEndPoint remote = receiveEndPoint;
-            byte[] data = server.Receive(ref remote);
-            receiveEndPoint = remote;
-            if (data.Length > 0)
-            {
-                onClientIdAssigned?.Invoke(data);
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    async Task ReceiveFramePacketsAsync()
-    {
-        while (true)
-        {
-            if (server.Available > 0)
-            {
-                IPEndPoint remote = receiveEndPoint;
-                byte[] data = server.Receive(ref remote);
-                receiveEndPoint = remote;
-                if (data.Length > 0)
-                {
-                    onFramePacketReceived?.Invoke(data);
-                }
-            }
-            await Task.Yield();
-        }
-    }
-
-    public bool TryReceiveFramePacket()
-    {
-        if (server.Available <= 0)
-        {
-            return false;
-        }
-
-        IPEndPoint remote = receiveEndPoint;
-        byte[] data = server.Receive(ref remote);
-        receiveEndPoint = remote;
-
-        if (data.Length <= 0)
-        {
-            return false;
-        }
-        onFramePacketReceived?.Invoke(data);
-
-        return true;
     }
 }
