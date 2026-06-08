@@ -79,6 +79,13 @@ public class ClientNetwork
         receiveTask = ReceivePacket(receiveCts);
     }
 
+    public void StopReceivingPacket()
+    {
+        receiveCts.Cancel();
+        receiveCts.Dispose();
+        receiveCts = null;
+    }
+
     async Task ReceivePacket(CancellationTokenSource cts)
     {
         while (!cts.Token.IsCancellationRequested)
@@ -92,32 +99,44 @@ public class ClientNetwork
             }
 
             pendingPackets.Enqueue(data);
-            // PacketHeader header = PacketCodec.ReadPacketHeaderFromBytes(data);
+        }
+    }
 
-            // switch (header.packetType)
-            // {
-            //     case PacketType.ACK:
-            //         ReceiveConnectionResponse(data);
-            //         break;
-            //     case PacketType.Frame:
-            //         ReceiveFramePacket(data);
-            //         break;
-            //     default:
-            //         Debug.LogWarning($"Received packet with unknown type: {header.packetType}");
-            //         break;
-            // }
+    public void PumpReceivedPackets()
+    {
+        while (pendingPackets.TryDequeue(out byte[] data))
+        {
+            HandleReceivedPacket(data);
+        }
+    }
+
+    void HandleReceivedPacket(byte[] data)
+    {
+        PacketHeader header = PacketCodec.ReadPacketHeaderFromBytes(data);
+
+        switch (header.packetType)
+        {
+            case PacketType.ACK:
+                ReceiveConnectionResponse(data);
+                break;
+            case PacketType.Frame:
+                ReceiveFramePacket(data);
+                break;
+            default:
+                Debug.LogWarning($"Received packet with unknown type: {header.packetType}");
+                break;
         }
     }
 
     void ReceiveConnectionResponse(byte[] data)
     {
-        connectionResponseQueue.Enqueue(data);
+        // connectionResponseQueue.Enqueue(data);
         onClientIdAssigned?.Invoke(data);
     }
 
     void ReceiveFramePacket(byte[] data)
     {
-        framePacketQueue.Enqueue(data);
+        // framePacketQueue.Enqueue(data);
         onFramePacketReceived?.Invoke(data);
     }
 }

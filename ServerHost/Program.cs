@@ -13,7 +13,7 @@ public static class Program
 
     static Network? network;
     static uint connectedClientCount = 0;
-    const uint maxClients = 2;
+    const uint maxClients = 1;
     const double fixedTimeStepSeconds = 1.0 / 30.0; // 30 ticks per second
     static uint currentTick = 0;
     
