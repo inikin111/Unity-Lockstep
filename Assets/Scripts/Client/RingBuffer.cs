@@ -24,10 +24,7 @@ public class RingBuffer<T>
 
     public void Clear()
     {
-        for (uint i = 0; i < capacity; i++)
-        {
-            Array.Clear(buffer, 0, buffer.Length);
-        }
+        Array.Clear(buffer, 0, buffer.Length);
     }
 
     public T this[uint index]
