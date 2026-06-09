@@ -589,19 +589,12 @@ public class Simulator
         }
 
         int distanceToFaceX = halfExtents.x - Math.Abs(localCenter.x);
-        int distanceToFaceY = halfExtents.y - Math.Abs(localCenter.y);
         int distanceToFaceZ = halfExtents.z - Math.Abs(localCenter.z);
 
         normal = new Vector3i(localCenter.x >= 0 ? Vector3i.Scale : -Vector3i.Scale, 0, 0);
         penetration = sphere.colliderRadius + distanceToFaceX;
 
-        if (distanceToFaceY < penetration - sphere.colliderRadius)
-        {
-            normal = new Vector3i(0, localCenter.y >= 0 ? Vector3i.Scale : -Vector3i.Scale, 0);
-            penetration = sphere.colliderRadius + distanceToFaceY;
-        }
-
-        if (distanceToFaceZ < penetration - sphere.colliderRadius)
+        if (distanceToFaceZ < distanceToFaceX)
         {
             normal = new Vector3i(0, 0, localCenter.z >= 0 ? Vector3i.Scale : -Vector3i.Scale);
             penetration = sphere.colliderRadius + distanceToFaceZ;
