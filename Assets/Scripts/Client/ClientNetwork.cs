@@ -11,14 +11,13 @@ public class ClientNetwork
 {
     const string ServerIP = "127.0.0.1";
     const int ServerPort = 5478;
+    const int HandlePacketLimitPerFrame = 5;
     UdpClient server;
     IPEndPoint receiveEndPoint = new IPEndPoint(IPAddress.Parse(ServerIP), ServerPort);
     Action<byte[]> onClientIdAssigned;
     Action<byte[]> onFramePacketReceived;
     CancellationTokenSource receiveCts;
     Task receiveTask;
-    ConcurrentQueue<byte[]> framePacketQueue = new ConcurrentQueue<byte[]>();
-    ConcurrentQueue<byte[]> connectionResponseQueue = new ConcurrentQueue<byte[]>();
     public ConcurrentQueue<byte[]> pendingPackets = new ConcurrentQueue<byte[]>();
 
     public bool Initialize(Action<byte[]> onClientIdAssigned, Action<byte[]> onFramePacketReceived, Vector3i pos)
@@ -33,7 +32,9 @@ public class ClientNetwork
 
     void ConnectToServer()
     {
+#if UNITY_EDITOR
         Debug.Log($"Connecting to server at udp://{ServerIP}:{ServerPort}...");
+#endif
         server = new UdpClient();
         server.Connect(ServerIP, ServerPort);
         StartReceivingPacket();
@@ -41,7 +42,9 @@ public class ClientNetwork
 
     void SendConnectionRequest(Vector3i pos)
     {
+#if UNITY_EDITOR
         Debug.Log($"Sending connection request with position {pos}...");
+#endif
         ClientPos[] position = new ClientPos[1];
         position[0] = new ClientPos { id = 0, position = pos };
 
@@ -90,7 +93,7 @@ public class ClientNetwork
     {
         while (!cts.Token.IsCancellationRequested)
         {
-            UdpReceiveResult result = await server.ReceiveAsync();
+            UdpReceiveResult result = await server.ReceiveAsync().ConfigureAwait(false);
             byte[] data = result.Buffer;
 
             if (data == null || data.Length == 0)
@@ -104,16 +107,24 @@ public class ClientNetwork
 
     public void PumpReceivedPackets()
     {
+        int handledCount = 0;
         while (pendingPackets.TryDequeue(out byte[] data))
         {
             HandleReceivedPacket(data);
+            handledCount++;
+            if (handledCount >= HandlePacketLimitPerFrame)
+            {
+                break;
+            }
         }
     }
 
     void HandleReceivedPacket(byte[] data)
     {
         PacketHeader header = PacketCodec.ReadPacketHeaderFromBytes(data);
+#if UNITY_EDITOR
         Debug.Log($"Received packet of type {header.packetType} from server.");
+#endif
         switch (header.packetType)
         {
             case PacketType.ACK:
@@ -123,7 +134,9 @@ public class ClientNetwork
                 ReceiveFramePacket(data);
                 break;
             default:
+#if UNITY_EDITOR
                 Debug.LogWarning($"Received packet with unknown type: {header.packetType}");
+#endif
                 break;
         }
     }

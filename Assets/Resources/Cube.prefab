@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 2099336750390020140}
   - component: {fileID: 6380843190334677339}
   - component: {fileID: 22122659457190588}
+  - component: {fileID: 8797816465548333038}
   m_Layer: 0
   m_Name: Cube
   m_TagString: Untagged
@@ -112,3 +113,25 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &8797816465548333038
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2397621172183322208}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c548439a9ca831342a2ec9065c851123, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EntityUnit
+  colliderCenter: {x: 0, y: 0, z: 0}
+  colliderSize: {x: 1, y: 1, z: 1}
+  colliderRadius: 0.5
+  motion:
+    isDynamic: 0
+    dragPermille: 180
+    maxSpeedPerTick: 120
+    pushImpulsePerCollision: 90
+    bouncinessPermille: 120
+  entityId: 0

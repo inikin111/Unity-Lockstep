@@ -63,8 +63,9 @@ public class Client : MonoSingleton<Client>
     {
         // 需要校验framePacket是否连续
         clientNetwork.SendPacket(PacketType.Input, PacketCodec.InputPacketToBytes(CreateInputPacket()));
-
+#if UNITY_EDITOR
         Debug.Log($"[Client] Sent input for tick={currentFrame} to server.");
+#endif
         if (currentFrame < InputDelay)
         {
             simulator.CaptureGameState(currentFrame);
@@ -79,15 +80,18 @@ public class Client : MonoSingleton<Client>
         }
 
         simulator.SimulateFrame(framePacket);
-        
+#if UNITY_EDITOR
         Debug.Log($"[Client] Tick={framePacket.tick} simulated and rendered.");
         Debug.Log($"[Client] {pendingFrames.Count} pending frames remain.");
+#endif
         return true;
     }
 
     InputPacket CreateInputPacket()
     {
+#if UNITY_EDITOR
         Debug.Log($"[Client] Creating input packet for tick={currentFrame}...");
+#endif
         if (!inputManager.ReadInput(out Vector3i inputPosition))
         {
             return new InputPacket
@@ -116,7 +120,9 @@ public class Client : MonoSingleton<Client>
             {
                 foreach (uint pendingTick in pendingFrames.Keys)
                 {
+#if UNITY_EDITOR
                     Debug.Log($"[Client] Waiting for frame tick={tick}; earliest pending tick={pendingTick}.");
+#endif
                     break;
                 }
             }
@@ -129,15 +135,21 @@ public class Client : MonoSingleton<Client>
 
     void OnResponseReceived(byte[] data)
     {
+#if UNITY_EDITOR
         Debug.Log("Received connection response from server.");
+#endif
         ACKPacket packet = PacketCodec.ReadACKPacketBody(data);
         clientId = packet.clientId;
+#if UNITY_EDITOR
         Debug.Log($"Assigned clientId={clientId} by server.");
+#endif
         UIManager.Instance.SetClientId(clientId);
 
         foreach (var pos in packet.clientPos)
         {
+#if UNITY_EDITOR
             Debug.Log($"Received client position from server. clientId={pos.id}, position=({pos.X}, {pos.Y}, {pos.Z})");
+#endif
         }
         simulator.SetPlayerState(CreatePlayerState(packet.clientPos));
         simulator.SetEntityState(CreateEntityStates());
@@ -165,10 +177,10 @@ public class Client : MonoSingleton<Client>
                 entityId = entity.entityId,
                 body = new CollisionBodyState
                 {
-                    position = entity.unitTr.position.ToVector3i(),
+                    position = entity.unitTr.position.ToVector3i() + entity.colliderCenter.ToVector3i(),
                     colliderSize = entity.colliderSize.ToVector3i(),
                     colliderRadius = entity.colliderRadius.ToFixedInt(),
-                    colliderType = ColliderType.Sphere
+                    colliderType = entity.colliderType
                 }
             };
         }
@@ -221,7 +233,9 @@ public class Client : MonoSingleton<Client>
         FramePacket packet = PacketCodec.ReadFramePacketBody(framePacket);
         if (packet.tick < currentFrame)
         {
+#if UNITY_EDITOR
             Debug.LogWarning($"[Client] Dropping stale frame tick={packet.tick}; currentFrame={currentFrame}.");
+#endif
             return;
         }
 
