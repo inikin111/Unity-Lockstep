@@ -32,9 +32,6 @@ public class ClientNetwork
 
     void ConnectToServer()
     {
-#if UNITY_EDITOR
-        Debug.Log($"Connecting to server at udp://{ServerIP}:{ServerPort}...");
-#endif
         server = new UdpClient();
         server.Connect(ServerIP, ServerPort);
         StartReceivingPacket();
@@ -42,9 +39,6 @@ public class ClientNetwork
 
     void SendConnectionRequest(Vector3i pos)
     {
-#if UNITY_EDITOR
-        Debug.Log($"Sending connection request with position {pos}...");
-#endif
         ClientPos[] position = new ClientPos[1];
         position[0] = new ClientPos { id = 0, position = pos };
 
@@ -122,9 +116,6 @@ public class ClientNetwork
     void HandleReceivedPacket(byte[] data)
     {
         PacketHeader header = PacketCodec.ReadPacketHeaderFromBytes(data);
-#if UNITY_EDITOR
-        Debug.Log($"Received packet of type {header.packetType} from server.");
-#endif
         switch (header.packetType)
         {
             case PacketType.ACK:
@@ -134,9 +125,6 @@ public class ClientNetwork
                 ReceiveFramePacket(data);
                 break;
             default:
-#if UNITY_EDITOR
-                Debug.LogWarning($"Received packet with unknown type: {header.packetType}");
-#endif
                 break;
         }
     }

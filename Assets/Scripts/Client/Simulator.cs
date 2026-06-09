@@ -377,7 +377,18 @@ public class Simulator
                 
                 if (stateA.body.colliderType == ColliderType.Box)
                 {
-                    // TODO: Skip box to box collision for now
+                    if (stateB.body.colliderType == ColliderType.Box)
+                    {
+                        // TODO: Skip box to box collision for now
+                        continue;
+                    }
+
+                    if (CheckBoxShpereOverlap(stateA.body, stateB.body))
+                    {
+                        HandleEntityEntityCollisionWall(entityB, entityA, ref stateB, ref stateA);
+                        entityStates[entityA] = stateA;
+                        entityStates[entityB] = stateB;
+                    }
                     continue;
                 }
 
@@ -476,21 +487,22 @@ public class Simulator
 #endif
     }
 
-    // NOTE: entityA is shpere and entityB is Cube, but the TryGetBoxSphereCollision needs pass Cube first then Sphere.
-    //       That's odd but I don't want to change it for now.
-    //       Because of that odd order, it will return the normal from Cube to Sphere, which is inversed of we need.
-    void HandleEntityEntityCollisionWall(uint entityA, uint entityB, ref EntityState stateA, ref EntityState stateB)
+    // sphereEntityId is the dynamic sphere candidate, wallEntityId is the static box.
+    void HandleEntityEntityCollisionWall(uint sphereEntityId, uint wallEntityId, ref EntityState sphere, ref EntityState wall)
     {
-        if (!TryGetBoxSphereCollision(stateB.body, stateA.body, out Vector3i normal, out int penetration))
+        if (!TryGetBoxSphereCollision(wall.body, sphere.body, out Vector3i normal, out int penetration))
+        {
+            return;
+        }
+
+        if (!entityMotionStates.TryGetValue(sphereEntityId, out EntityMotionRuntime motion) || !motion.isDynamic)
         {
             return;
         }
 
         Vector3i separation = normal.ScaleTo(penetration);
-
-        EntityMotionRuntime motionA = entityMotionStates[entityA];
-        stateA.position += separation;
-        ReflectDynamicEntityFromStatic(motionA, -normal);
+        sphere.position += separation;
+        ReflectDynamicEntityFromStatic(motion, -normal);
     }
     
     void HandleEntityEntityCollisionSphere(uint entityA, uint entityB, ref EntityState stateA, ref EntityState stateB)
@@ -560,7 +572,7 @@ public class Simulator
         int clampedZ = Clamp(localCenter.z, -halfExtents.z, halfExtents.z);
         Vector3i closestPoint = box.position + new Vector3i(clampedX, clampedY, clampedZ);
         Vector3i delta = sphere.position - closestPoint;
-        int distance = delta.Magnitude() + 1;
+        int distance = delta.Magnitude();
 
         if (distance > 0)
         {
@@ -576,8 +588,24 @@ public class Simulator
             return true;
         }
 
-        normal = delta.Normalize();
-        penetration = sphere.colliderRadius * 2;
+        int distanceToFaceX = halfExtents.x - Math.Abs(localCenter.x);
+        int distanceToFaceY = halfExtents.y - Math.Abs(localCenter.y);
+        int distanceToFaceZ = halfExtents.z - Math.Abs(localCenter.z);
+
+        normal = new Vector3i(localCenter.x >= 0 ? Vector3i.Scale : -Vector3i.Scale, 0, 0);
+        penetration = sphere.colliderRadius + distanceToFaceX;
+
+        if (distanceToFaceY < penetration - sphere.colliderRadius)
+        {
+            normal = new Vector3i(0, localCenter.y >= 0 ? Vector3i.Scale : -Vector3i.Scale, 0);
+            penetration = sphere.colliderRadius + distanceToFaceY;
+        }
+
+        if (distanceToFaceZ < penetration - sphere.colliderRadius)
+        {
+            normal = new Vector3i(0, 0, localCenter.z >= 0 ? Vector3i.Scale : -Vector3i.Scale);
+            penetration = sphere.colliderRadius + distanceToFaceZ;
+        }
 
         return true;
     }

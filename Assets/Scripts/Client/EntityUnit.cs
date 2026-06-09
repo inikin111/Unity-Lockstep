@@ -6,7 +6,7 @@ public class EntityMotionProfile
     [InspectorName("Dynamic motion")]
     public bool isDynamic = true;
 
-    [Range(0, 1000)]
+    [Range(-10, 1000)]
     public int dragPermille = 180;
 
     public int maxSpeedPerTick = 120;
@@ -28,7 +28,7 @@ public class EntityUnit : MonoBehaviour
     [InspectorName("Experience Motion")]
     public EntityMotionProfile motion = new EntityMotionProfile();
     
-    public uint entityId;
+    [HideInInspector] public uint entityId;
     public Transform unitTr => transform;
 
     void Reset()
@@ -48,12 +48,14 @@ public class EntityUnit : MonoBehaviour
 
     public void UpdatePosition(Vector3i pos)
     {
-        unitTr.position = unitTr.position.MoveTowards(pos.ToVector3(), Time.deltaTime * 200f);
+        // unitTr.position = unitTr.position.MoveTowards(pos.ToVector3(), Time.deltaTime * 200f);
+        unitTr.position = pos.ToVector3();
     }
 
-    public void SetEntityId(uint entityId)
+    public uint SetEntityId(uint entityId)
     {
         this.entityId = entityId;
+        return entityId;
     }
 
     public void UpdateColliderSize(Vector3i size)
@@ -66,7 +68,7 @@ public class EntityUnit : MonoBehaviour
         return new EntityMotionConfig
         {
             entityId = entityId,
-            isDynamic = motion.isDynamic,
+            isDynamic = motion.isDynamic, // 先全部当做静态的，后面再根据需要改成动态的
             dragPermille = motion.dragPermille,
             maxSpeedPerTick = motion.maxSpeedPerTick,
             pushImpulsePerCollision = motion.pushImpulsePerCollision,

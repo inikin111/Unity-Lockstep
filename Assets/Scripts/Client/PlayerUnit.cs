@@ -10,9 +10,16 @@ public class PlayerUnit : MonoBehaviour
     uint clientId; // 暂时不知道干啥，留着吧
     public Transform unitTr => transform;
 
+    bool isFirstFrame = true;
     public void UpdatePosition(Vector3i pos)
     {
-        // unitTr.position = pos.ToVector3();
+        if (isFirstFrame)
+        {
+            unitTr.position = pos.ToVector3();
+            isFirstFrame = false;
+            return;
+        }
+
         unitTr.position = unitTr.position.MoveTowards(pos.ToVector3(), Time.deltaTime * 200f);
     }
 

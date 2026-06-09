@@ -36,8 +36,6 @@ public class GameRenderer : MonoSingleton<GameRenderer>
             }
 
             playerUnit.UpdatePosition(playerState.position);
-            
-            playerUnit.UpdateColliderSize(playerState.colliderSize);
         }
     }
     
@@ -59,7 +57,6 @@ public class GameRenderer : MonoSingleton<GameRenderer>
             }
             
             entityUnit.UpdatePosition(entityState.position);
-            entityUnit.UpdateColliderSize(entityState.colliderSize);
         }
     }
     
