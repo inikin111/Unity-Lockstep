@@ -19,6 +19,7 @@ public class Client : MonoSingleton<Client>
     const double FixedTimeStepSeconds = 1.0 / 30.0; // 30 ticks per second
     double accumulatedTime = 0.0;
     uint currentFrame = 0;
+    uint nextInputTick = 0;
     uint clientId = 0;
     bool isConnected = false;
     bool isInitialized = false;
@@ -63,9 +64,7 @@ public class Client : MonoSingleton<Client>
     {
         // 需要校验framePacket是否连续
         clientNetwork.SendPacket(PacketType.Input, PacketCodec.InputPacketToBytes(CreateInputPacket()));
-#if UNITY_EDITOR
-        Debug.Log($"[Client] Sent input for tick={currentFrame} to server.");
-#endif
+
         if (currentFrame < InputDelay)
         {
             simulator.CaptureGameState(currentFrame);
@@ -80,10 +79,7 @@ public class Client : MonoSingleton<Client>
         }
 
         simulator.SimulateFrame(framePacket);
-#if UNITY_EDITOR
-        Debug.Log($"[Client] Tick={framePacket.tick} simulated and rendered.");
-        Debug.Log($"[Client] {pendingFrames.Count} pending frames remain.");
-#endif
+
         return true;
     }
 
@@ -97,7 +93,7 @@ public class Client : MonoSingleton<Client>
             return new InputPacket
             {
                 clientId = clientId,
-                tick = currentFrame + InputDelay,
+                tick = nextInputTick++ + InputDelay,
                 inputPos = inputPosition,
                 commandType = CommandType.None
             };
@@ -106,7 +102,7 @@ public class Client : MonoSingleton<Client>
         return new InputPacket
         {
             clientId = clientId,
-            tick = currentFrame + InputDelay,
+            tick = nextInputTick++ + InputDelay,
             inputPos = inputPosition,
             commandType = CommandType.Move
         };
@@ -135,22 +131,15 @@ public class Client : MonoSingleton<Client>
 
     void OnResponseReceived(byte[] data)
     {
-#if UNITY_EDITOR
-        Debug.Log("Received connection response from server.");
-#endif
         ACKPacket packet = PacketCodec.ReadACKPacketBody(data);
         clientId = packet.clientId;
-#if UNITY_EDITOR
-        Debug.Log($"Assigned clientId={clientId} by server.");
-#endif
+        currentFrame = packet.startTick;
+        nextInputTick = currentFrame;
+        accumulatedTime = 0.0;
+        pendingFrames.Clear();
+
         UIManager.Instance.SetClientId(clientId);
 
-        foreach (var pos in packet.clientPos)
-        {
-#if UNITY_EDITOR
-            Debug.Log($"Received client position from server. clientId={pos.id}, position=({pos.X}, {pos.Y}, {pos.Z})");
-#endif
-        }
         simulator.SetPlayerState(CreatePlayerState(packet.clientPos));
         simulator.SetEntityState(CreateEntityStates());
         simulator.SetEntityMotionConfigs(CreateEntityMotionConfigs());
@@ -174,7 +163,7 @@ public class Client : MonoSingleton<Client>
         {
             states[index++] = new EntityState
             {
-                entityId = entity.entityId,
+                entityId = entity.SetEntityId((uint)index),
                 body = new CollisionBodyState
                 {
                     position = entity.unitTr.position.ToVector3i() + entity.colliderCenter.ToVector3i(),

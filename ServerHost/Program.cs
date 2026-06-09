@@ -13,7 +13,7 @@ public static class Program
 
     static Network? network;
     static uint connectedClientCount = 0;
-    const uint maxClients = 2;
+    const uint maxClients = 3;
     const double fixedTimeStepSeconds = 1.0 / 30.0; // 30 ticks per second
     const uint inputDelay = 2;
     static uint currentTick = 0;
@@ -37,8 +37,7 @@ public static class Program
         // Stage 1: Wait for clients to connect and assign client IDs
         while (pendingConnections.Count < maxClients)
         {
-            Console.WriteLine("Waiting for clients to connect...");
-            network.TryReceivePacket();
+            while (network.TryReceivePacket()) { }
             Thread.Sleep(30);
         }
 
@@ -53,6 +52,7 @@ public static class Program
             ACKPacket responsePacket = new ACKPacket
             {
                 clientId = connection.Value.ClientId,
+                startTick = currentTick,
                 clientPos = positions
             };
             byte[] responseData = PacketCodec.ACKPacketToBytes(responsePacket);
@@ -74,7 +74,7 @@ public static class Program
             lastTime = currentTime;
             accumulatedTime += deltaTime;
 
-            network.TryReceivePacket();
+            while (network.TryReceivePacket()) { }
 
             if (accumulatedTime >= fixedTimeStepSeconds && CanAdvanceTick(currentTick, clients, inputsByTick))
             {
@@ -155,7 +155,6 @@ public static class Program
             return;
         }
 
-        Console.WriteLine($"Receive input from {remote.Address}:{remote.Port}, clientId={packet.clientId}, tick={packet.tick}, input={packet.inputPos}");
 
         if (!clients.ContainsKey(packet.clientId))
         {
@@ -172,8 +171,6 @@ public static class Program
             {
                 network.SendPacket(PacketType.Frame, PacketCodec.FramePacketToBytes(framePacket), client);
             }
-
-            Console.WriteLine($"Broadcast frame tick={framePacket.tick}, inputCount={framePacket.inputs.Length}");
         }
     }
 

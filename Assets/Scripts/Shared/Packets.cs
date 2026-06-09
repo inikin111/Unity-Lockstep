@@ -62,6 +62,7 @@ namespace Lockstep.Packets
     public struct ACKPacket
     {
         public uint clientId;
+        public uint startTick;
         public ClientPos[] clientPos;
     }
 
