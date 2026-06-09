@@ -32,6 +32,6 @@ public class UIManager : MonoSingleton<UIManager>
 
     public void UpdateFrame(uint frame)
     {
-        frameText.text = $"Current Frame: {frame}";
+        frameText.text = $"Current Frame: {frame % 200}";
     }
 }
