@@ -52,6 +52,7 @@ public static class Program
             ACKPacket responsePacket = new ACKPacket
             {
                 clientId = connection.Value.ClientId,
+                startTick = currentTick,
                 clientPos = positions
             };
             byte[] responseData = PacketCodec.ACKPacketToBytes(responsePacket);
