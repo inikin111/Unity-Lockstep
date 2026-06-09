@@ -14,6 +14,7 @@ public class RingBuffer<T>
     public void Insert(uint index, T value)
     {
         // TODO: 这里有问题，网络层重构时的Bug可能是，刚开始游戏index == 22，直接报错
+        // 后续:  bug源自服务端逻辑，服务端未等待和检验，直接自己多跑了十几帧，同时客户端每次tick只尝试获取最新framePacket，导致出错
         if (index > capacity && index < EarliestTick)
         {
             throw new InvalidOperationException($"Index {index} is too old. Earliest tick is {EarliestTick}.");

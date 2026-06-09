@@ -13,8 +13,9 @@ public static class Program
 
     static Network? network;
     static uint connectedClientCount = 0;
-    const uint maxClients = 1;
+    const uint maxClients = 2;
     const double fixedTimeStepSeconds = 1.0 / 30.0; // 30 ticks per second
+    const uint inputDelay = 2;
     static uint currentTick = 0;
     
     static Dictionary<IPEndPoint, PendingClient> pendingConnections = new();
@@ -56,6 +57,7 @@ public static class Program
             };
             byte[] responseData = PacketCodec.ACKPacketToBytes(responsePacket);
             network.SendPacket(PacketType.ACK, responseData, connection.Key);
+            clients[connection.Value.ClientId] = new IPEndPoint(connection.Key.Address, connection.Key.Port);
             Console.WriteLine($"Sent connection response to {connection.Key.Address}:{connection.Key.Port}, assigned clientId={connection.Value.ClientId}");
         }
 
@@ -74,7 +76,7 @@ public static class Program
 
             network.TryReceivePacket();
 
-            if (accumulatedTime >= fixedTimeStepSeconds)
+            if (accumulatedTime >= fixedTimeStepSeconds && CanAdvanceTick(currentTick, clients, inputsByTick))
             {
                 accumulatedTime -= fixedTimeStepSeconds;
 
@@ -87,6 +89,37 @@ public static class Program
 
             Thread.Sleep(1);
         }
+    }
+
+    static bool CanAdvanceTick(
+        uint tick,
+        Dictionary<uint, IPEndPoint> clients,
+        Dictionary<uint, Dictionary<uint, InputPacket>> inputsByTick)
+    {
+        if (clients.Count == 0)
+        {
+            return false;
+        }
+
+        if (tick < inputDelay)
+        {
+            return true;
+        }
+
+        if (!inputsByTick.TryGetValue(tick, out Dictionary<uint, InputPacket>? tickInputs))
+        {
+            return false;
+        }
+
+        foreach (uint clientId in clients.Keys)
+        {
+            if (!tickInputs.ContainsKey(clientId))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     static void OnConnectionRequest(byte[] data, IPEndPoint remote)

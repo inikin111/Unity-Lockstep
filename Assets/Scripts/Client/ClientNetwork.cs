@@ -113,7 +113,7 @@ public class ClientNetwork
     void HandleReceivedPacket(byte[] data)
     {
         PacketHeader header = PacketCodec.ReadPacketHeaderFromBytes(data);
-
+        Debug.Log($"Received packet of type {header.packetType} from server.");
         switch (header.packetType)
         {
             case PacketType.ACK:

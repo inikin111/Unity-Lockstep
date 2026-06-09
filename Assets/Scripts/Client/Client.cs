@@ -25,7 +25,7 @@ public class Client : MonoSingleton<Client>
     int retryCount = 0;
     const int maxRetryCount = 3;
 
-    Queue<FramePacket> pendingFrames = new Queue<FramePacket>();
+    SortedDictionary<uint, FramePacket> pendingFrames = new SortedDictionary<uint, FramePacket>();
 
     void Awake()
     {
@@ -71,15 +71,9 @@ public class Client : MonoSingleton<Client>
             currentFrame++;
             return false;
         }
-        // if (!clientNetwork.TryReceivePacket())
-        // {
-        //     retryCount++;
-        //     // if (retryCount == maxRetryCount) EndGame(); 断开连接
-        //     return false;
-        // }
         retryCount = 0;
         // 改成获取当前帧的FramePacket，ai说：如果没有则继续等待（当前帧丢包了，等下一帧的FramePacket过来时再丢弃掉），如果等了很久都没有收到当前帧的FramePacket，则发起重传请求
-        if (!TryGetLatestFramePacket(out FramePacket framePacket))
+        if (!TryGetFramePacket(currentFrame, out FramePacket framePacket))
         {
             return false;
         }
@@ -93,7 +87,7 @@ public class Client : MonoSingleton<Client>
 
     InputPacket CreateInputPacket()
     {
-        Debug.Log($"ClientID: {clientId}");
+        Debug.Log($"[Client] Creating input packet for tick={currentFrame}...");
         if (!inputManager.ReadInput(out Vector3i inputPosition))
         {
             return new InputPacket
@@ -114,15 +108,22 @@ public class Client : MonoSingleton<Client>
         };
     }
 
-    bool TryGetLatestFramePacket(out FramePacket framePacket)
+    bool TryGetFramePacket(uint tick, out FramePacket framePacket)
     {
-        if (pendingFrames.Count <= 0)
+        if (!pendingFrames.TryGetValue(tick, out framePacket))
         {
-            framePacket = default;
+            if (pendingFrames.Count > 0)
+            {
+                foreach (uint pendingTick in pendingFrames.Keys)
+                {
+                    Debug.Log($"[Client] Waiting for frame tick={tick}; earliest pending tick={pendingTick}.");
+                    break;
+                }
+            }
             return false;
         }
 
-        framePacket = pendingFrames.Dequeue();
+        pendingFrames.Remove(tick);
         return true;
     }
 
@@ -217,7 +218,14 @@ public class Client : MonoSingleton<Client>
 
     void OnFramePacketReceived(byte[] framePacket)
     {
-        pendingFrames.Enqueue(PacketCodec.ReadFramePacketBody(framePacket));
+        FramePacket packet = PacketCodec.ReadFramePacketBody(framePacket);
+        if (packet.tick < currentFrame)
+        {
+            Debug.LogWarning($"[Client] Dropping stale frame tick={packet.tick}; currentFrame={currentFrame}.");
+            return;
+        }
+
+        pendingFrames[packet.tick] = packet;
     }
 
     void EndGame()

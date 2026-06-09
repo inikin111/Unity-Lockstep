@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Lockstep.Packets;
+using UnityEngine;
 
 public enum ColliderType
 {
@@ -113,7 +114,7 @@ public class Simulator
 
     public void SimulateFrame(FramePacket framePacket)
     {
-        // UnityEngine.Debug.Log($"[Simulator] Tick={framePacket.tick}, inputCount={(framePacket.inputs == null ? 0 : framePacket.inputs.Length)}, playerCount={playerStates.Count}");
+        Debug.Log($"[Simulator] Tick={framePacket.tick}, inputCount={(framePacket.inputs == null ? 0 : framePacket.inputs.Length)}");
         ApplyFrameInputs(framePacket);
         CalculateMovement();
         SimulateEntityMotion();
@@ -248,6 +249,7 @@ public class Simulator
 
     void SaveGameState(uint tick)
     {
+        Debug.Log($"[Simulator] Saving game state for tick {tick}...");
         gameStateHistory[tick] = new GameState
         {
             playerStates = playerStates.Values.ToArray(),
@@ -262,6 +264,7 @@ public class Simulator
 
     public void CaptureGameState(uint tick)
     {
+        Debug.Log($"[Simulator] Capturing game state for tick {tick}");
         SaveGameState(tick);
     }
 
