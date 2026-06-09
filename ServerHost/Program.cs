@@ -13,7 +13,7 @@ public static class Program
 
     static Network? network;
     static uint connectedClientCount = 0;
-    const uint maxClients = 3;
+    const uint maxClients = 2;
     const double fixedTimeStepSeconds = 1.0 / 30.0; // 30 ticks per second
     const uint inputDelay = 2;
     static uint currentTick = 0;
@@ -52,7 +52,6 @@ public static class Program
             ACKPacket responsePacket = new ACKPacket
             {
                 clientId = connection.Value.ClientId,
-                startTick = currentTick,
                 clientPos = positions
             };
             byte[] responseData = PacketCodec.ACKPacketToBytes(responsePacket);

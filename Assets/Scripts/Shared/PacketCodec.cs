@@ -6,7 +6,7 @@ namespace Lockstep.Packets
     {
         const int InputPacketLength = (sizeof(uint) * 2) + (sizeof(int) * 3) + sizeof(CommandType);
         const int FramePacketHeaderLength = sizeof(uint);
-        const int ACKPacketHeaderLength = sizeof(uint) * 2;
+        const int ACKPacketHeaderLength = sizeof(uint);
         const int ClientPosLength = sizeof(uint) + (sizeof(int) * 3);
         const int PacketHeaderLength = sizeof(PacketType);
 
@@ -86,7 +86,6 @@ namespace Lockstep.Packets
             byte[] bytes = new byte[ACKPacketHeaderLength + packet.clientPos.Length * ClientPosLength];
 
             Buffer.BlockCopy(BitConverter.GetBytes(packet.clientId), 0, bytes, 0, sizeof(uint));
-            Buffer.BlockCopy(BitConverter.GetBytes(packet.startTick), 0, bytes, sizeof(uint), sizeof(uint));
             for (int i = 0; i < packet.clientPos.Length; i++)
             {
                 int offset = ACKPacketHeaderLength + i * ClientPosLength;
@@ -137,7 +136,6 @@ namespace Lockstep.Packets
             return new ACKPacket
             {
                 clientId = BitConverter.ToUInt32(bytes, offset),
-                startTick = BitConverter.ToUInt32(bytes, offset + sizeof(uint)),
                 clientPos = positions
             };
         }

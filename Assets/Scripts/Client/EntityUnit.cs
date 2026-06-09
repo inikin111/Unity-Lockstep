@@ -68,7 +68,7 @@ public class EntityUnit : MonoBehaviour
         return new EntityMotionConfig
         {
             entityId = entityId,
-            isDynamic = motion.isDynamic, // 先全部当做静态的，后面再根据需要改成动态的
+            isDynamic = motion.isDynamic,
             dragPermille = motion.dragPermille,
             maxSpeedPerTick = motion.maxSpeedPerTick,
             pushImpulsePerCollision = motion.pushImpulsePerCollision,

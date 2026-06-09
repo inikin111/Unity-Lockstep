@@ -12,6 +12,7 @@ public class ClientNetwork
     const string ServerIP = "127.0.0.1";
     const int ServerPort = 5478;
     const int HandlePacketLimitPerFrame = 5;
+    const int MaxPendingPackets = 256;
     UdpClient server;
     IPEndPoint receiveEndPoint = new IPEndPoint(IPAddress.Parse(ServerIP), ServerPort);
     Action<byte[]> onClientIdAssigned;
@@ -78,16 +79,37 @@ public class ClientNetwork
 
     public void StopReceivingPacket()
     {
-        receiveCts.Cancel();
-        receiveCts.Dispose();
+        receiveCts?.Cancel();
+        server?.Close();
+        server?.Dispose();
+        receiveCts?.Dispose();
         receiveCts = null;
+        server = null;
     }
 
     async Task ReceivePacket(CancellationTokenSource cts)
     {
         while (!cts.Token.IsCancellationRequested)
         {
-            UdpReceiveResult result = await server.ReceiveAsync().ConfigureAwait(false);
+            if (server == null)
+            {
+                break;
+            }
+
+            UdpReceiveResult result;
+            try
+            {
+                result = await server.ReceiveAsync().ConfigureAwait(false);
+            }
+            catch (ObjectDisposedException)
+            {
+                break;
+            }
+            catch (SocketException)
+            {
+                break;
+            }
+
             byte[] data = result.Buffer;
 
             if (data == null || data.Length == 0)
@@ -95,6 +117,7 @@ public class ClientNetwork
                 continue;
             }
 
+            while (pendingPackets.Count >= MaxPendingPackets && pendingPackets.TryDequeue(out _)) { }
             pendingPackets.Enqueue(data);
         }
     }
