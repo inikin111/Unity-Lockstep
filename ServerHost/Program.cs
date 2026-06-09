@@ -13,7 +13,7 @@ public static class Program
 
     static Network? network;
     static uint connectedClientCount = 0;
-    const uint maxClients = 2;
+    const uint maxClients = 3;
     const double fixedTimeStepSeconds = 1.0 / 30.0; // 30 ticks per second
     const uint inputDelay = 2;
     static uint currentTick = 0;
@@ -37,8 +37,7 @@ public static class Program
         // Stage 1: Wait for clients to connect and assign client IDs
         while (pendingConnections.Count < maxClients)
         {
-            Console.WriteLine("Waiting for clients to connect...");
-            network.TryReceivePacket();
+            while (network.TryReceivePacket()) { }
             Thread.Sleep(30);
         }
 
@@ -74,7 +73,7 @@ public static class Program
             lastTime = currentTime;
             accumulatedTime += deltaTime;
 
-            network.TryReceivePacket();
+            while (network.TryReceivePacket()) { }
 
             if (accumulatedTime >= fixedTimeStepSeconds && CanAdvanceTick(currentTick, clients, inputsByTick))
             {
@@ -127,7 +126,6 @@ public static class Program
         // 检查是否已经处理过这个客户端的连接请求
         if (pendingConnections.ContainsKey(remote))
         {
-            Console.WriteLine($"Ignoring duplicate connection request from {remote.Address}:{remote.Port}");
             return;
         }
 
@@ -136,10 +134,7 @@ public static class Program
 
         connectedClientCount++;
         uint clientId = connectedClientCount;
-        Console.WriteLine($"Assigning clientId={clientId} to {remote.Address}:{remote.Port}");
         pendingConnections[remote] = new PendingClient(clientId, packet.clientPos[0].position);
-
-        Console.WriteLine($"Received connection request from {remote.Address}:{remote.Port}");
     }
 
     static void OnInputPacketReceived(byte[] data, IPEndPoint remote)
@@ -154,8 +149,6 @@ public static class Program
             Console.WriteLine($"Invalid packet from {remote.Address}:{remote.Port}: {exception.Message}");
             return;
         }
-
-        Console.WriteLine($"Receive input from {remote.Address}:{remote.Port}, clientId={packet.clientId}, tick={packet.tick}, input={packet.inputPos}");
 
         if (!clients.ContainsKey(packet.clientId))
         {
@@ -172,8 +165,6 @@ public static class Program
             {
                 network.SendPacket(PacketType.Frame, PacketCodec.FramePacketToBytes(framePacket), client);
             }
-
-            Console.WriteLine($"Broadcast frame tick={framePacket.tick}, inputCount={framePacket.inputs.Length}");
         }
     }
 
