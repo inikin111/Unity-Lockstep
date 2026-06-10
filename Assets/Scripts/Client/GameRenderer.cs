@@ -126,19 +126,13 @@ public class GameRenderer : MonoSingleton<GameRenderer>
         playerUnits[clientId] = playerUnit;
     }
 
-    public void AddLocalEntityUnits(EntityUnit[] entities)
+    public void AddEntityUnits(EntityUnit[] entities)
     {
-#if UNITY_EDITOR
-        Debug.Log($"Adding local entity units, count={entities.Length}");
-#endif
         foreach (var entity in entities)
         {
             uint entityId = entity.entityId;
             if (entityUnits.ContainsKey(entityId))
             {
-#if UNITY_EDITOR
-                Debug.LogWarning($"Entity unit with entityId={entityId} already exists.");
-#endif
                 continue;
             }
             entityUnits[entityId] = entity;

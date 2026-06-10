@@ -47,6 +47,8 @@ public static class Program
             position = connection.Position
         }).ToArray();
 
+        EntityData entityData = LoadEntityData();
+
         foreach (var connection in pendingConnections)
         {
             ACKPacket responsePacket = new ACKPacket
@@ -217,5 +219,20 @@ public static class Program
 
         framePackets[currentTick % framePackets.Length] = framePacket;
         return framePacket;
+    }
+
+    static EntityData LoadEntityData()
+    {
+        string path = Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\Assets\Scripts\Shared\entityData.json");
+
+        string json = File.ReadAllText(path);
+        return entityData = JsonSerializer.Deserialize<EntityData>(
+            json,
+            new JsonSerializerOptions
+            {
+                IncludeFields = true,
+                PropertyNameCaseInsensitive = true
+            }
+        );
     }
 }
