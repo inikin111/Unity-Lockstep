@@ -79,45 +79,6 @@ Packages/
 - 当某个 tick 的输入齐全后，广播对应的 `FramePacket`。
 - 服务端同步推进 `Simulator`，保存历史 `GameState` 并输出 checksum，已经具备作为重连状态同步权威来源的基础数据。
 
-## 运行方式
-
-### 1. 打开 Unity 项目
-
-使用 Unity `6000.3.1f1` 打开项目根目录。
-
-打开场景：
-
-```text
-Assets/Scenes/SampleScene.unity
-```
-
-### 2. 启动服务器
-
-在项目根目录运行服务器入口。
-
-如果你的 IDE 已经把 `ServerHost` 作为可运行项目识别出来，可以直接运行 `ServerHost.Program.Main()`。
-
-服务器启动后会监听：
-
-```text
-udp://127.0.0.1:5478
-```
-
-注意：当前服务器默认 `maxClients = 1`，收到 1 个客户端连接后就会开始下发连接响应和帧包。需要多人测试时可以调整 `ServerHost/Program.cs` 里的 `maxClients`。
-
-### 3. 启动客户端
-
-在 Unity Editor 中运行场景即可启动默认单客户端 demo。需要多人测试时，先把服务器的 `maxClients` 调大，再启动多个客户端实例，例如：
-
-- 一个 Unity Editor 实例。
-- 一个或多个打包出的 Player。
-
-客户端连接成功后，会收到服务器分配的 `clientId`，然后进入固定 tick 模拟。
-
-### 4. 操作方式
-
-在场景中点击鼠标左键，客户端会把点击位置转换为移动目标，并通过 `InputPacket` 发送给服务器。服务器在对应 tick 广播输入集合后，客户端执行移动和碰撞模拟。
-
 ## 帧同步流程
 
 ```text
