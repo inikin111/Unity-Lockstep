@@ -11,7 +11,6 @@ public static class Program
     // 服务端处理客户端的重连/中途加入
     // 服务端处理客户端的重传请求，重传超时则放弃
     public record PendingClient(uint ClientId, Vector3i Position);
-
     static Network? network;
     static uint connectedClientCount = 0;
     const uint maxClients = 1;
@@ -29,6 +28,7 @@ public static class Program
     const uint maxBufferedFrames = 64;
     static FramePacket[] framePackets = new FramePacket[maxBufferedFrames];
     static readonly string gameStateLogPath = Path.Combine(AppContext.BaseDirectory, "server-gamestate.log");
+    static ServerState serverState = ServerState.WaitingForPlayers;
 
     public static void Main()
     {
@@ -70,6 +70,8 @@ public static class Program
             clients[connection.Value.ClientId] = new IPEndPoint(connection.Key.Address, connection.Key.Port);
             Console.WriteLine($"Sent connection response to {connection.Key.Address}:{connection.Key.Port}, assigned clientId={connection.Value.ClientId}");
         }
+
+        serverState = ServerState.Running;
 
         EntityData entityData = LoadEntityData();
         simulator.SetPlayerState(CreatePlayerStates(positions));
@@ -154,9 +156,10 @@ public static class Program
         return true;
     }
 
+    // 维护一个需要同步状态的客户端列表，收到连接请求时加入，把所有需要处理的包体都放到不同的列表里处理
     static void OnConnectionRequest(byte[] data, IPEndPoint remote)
     {
-        // 检查是否已经处理过这个客户端的连接请求
+        // 检查客户端是否连接上
         if (pendingConnections.ContainsKey(remote))
         {
             return;
@@ -187,6 +190,7 @@ public static class Program
         {
             clients[packet.clientId] = new IPEndPoint(remote.Address, remote.Port);
         }
+
         CacheInput(inputsByTick, packet);
     }
 

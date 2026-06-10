@@ -24,12 +24,14 @@ namespace Lockstep.Packets
         public PacketType packetType;
     }
 
-    // [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    // public struct StateSyncPacket
-    // {
-    //     public uint tick;
-    //     public GameState gameState;
-    // }
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public struct StateSyncPacket
+    {
+        public uint tick;
+        public int playerCount;
+        public int entityCount;
+        public GameState gameState;
+    }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public struct ResendFramePacket

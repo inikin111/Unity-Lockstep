@@ -4,6 +4,12 @@ using System.Net;
 using System.Net.Sockets;
 using Lockstep.Packets;
 
+public enum ServerState
+{
+    WaitingForPlayers,
+    Running
+}
+
 public class Network
 {
     const int ServerPort = 5478;
