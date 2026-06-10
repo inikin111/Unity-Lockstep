@@ -53,6 +53,12 @@ public struct PlayerState
     }
 }
 
+public static class PlayerSimulationConfig
+{
+    public static readonly Vector3i ColliderSize = Vector3i.One;
+    public const int ColliderRadius = 500;
+}
+
 [Serializable]
 public struct EntityState
 {

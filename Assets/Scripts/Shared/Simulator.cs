@@ -58,6 +58,93 @@ public class Simulator
         }
     }
 
+    public int GetGameStateChecksum(uint tick)
+    {
+        uint checksum = 2166136261;
+        GameState gameState = gameStateHistory[tick];
+
+        unchecked
+        {
+            HashPlayerStates(ref checksum, gameState.playerStates);
+            HashEntityStates(ref checksum, gameState.entityStates);
+            HashEntityMotionFrames(ref checksum, gameState.entityMotionFrames);
+            return (int)checksum;
+        }
+    }
+
+    static void HashPlayerStates(ref uint checksum, PlayerState[] states)
+    {
+        states ??= Array.Empty<PlayerState>();
+        HashInt(ref checksum, states.Length);
+
+        foreach (PlayerState state in states.OrderBy(state => state.clientId))
+        {
+            HashUInt(ref checksum, state.clientId);
+            HashInt(ref checksum, (int)state.commandType);
+            HashVector3i(ref checksum, state.targetPosition);
+            HashVector3i(ref checksum, state.frameVelocity);
+            HashCollisionBodyState(ref checksum, state.body);
+        }
+    }
+
+    static void HashEntityStates(ref uint checksum, EntityState[] states)
+    {
+        states ??= Array.Empty<EntityState>();
+        HashInt(ref checksum, states.Length);
+
+        foreach (EntityState state in states.OrderBy(state => state.entityId))
+        {
+            HashUInt(ref checksum, state.entityId);
+            HashCollisionBodyState(ref checksum, state.body);
+        }
+    }
+
+    static void HashEntityMotionFrames(ref uint checksum, EntityMotionFrame[] frames)
+    {
+        frames ??= Array.Empty<EntityMotionFrame>();
+        HashInt(ref checksum, frames.Length);
+
+        foreach (EntityMotionFrame frame in frames.OrderBy(frame => frame.entityId))
+        {
+            HashUInt(ref checksum, frame.entityId);
+            HashVector3i(ref checksum, frame.velocity);
+        }
+    }
+
+    static void HashCollisionBodyState(ref uint checksum, CollisionBodyState body)
+    {
+        HashInt(ref checksum, (int)body.colliderType);
+        HashVector3i(ref checksum, body.position);
+        HashVector3i(ref checksum, body.colliderSize);
+        HashInt(ref checksum, body.colliderRadius);
+    }
+
+    static void HashVector3i(ref uint checksum, Vector3i value)
+    {
+        HashInt(ref checksum, value.x);
+        HashInt(ref checksum, value.y);
+        HashInt(ref checksum, value.z);
+    }
+
+    static void HashUInt(ref uint checksum, uint value)
+    {
+        HashByte(ref checksum, (byte)value);
+        HashByte(ref checksum, (byte)(value >> 8));
+        HashByte(ref checksum, (byte)(value >> 16));
+        HashByte(ref checksum, (byte)(value >> 24));
+    }
+
+    static void HashInt(ref uint checksum, int value)
+    {
+        HashUInt(ref checksum, (uint)value);
+    }
+
+    static void HashByte(ref uint checksum, byte value)
+    {
+        checksum ^= value;
+        checksum *= 16777619;
+    }
+
     public void SetEntityMotionConfigs(EntityMotionConfig[] configs)
     {
         foreach (var config in configs)

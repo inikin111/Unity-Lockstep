@@ -75,14 +75,19 @@ public static class Program
         double accumulatedTime = 0;
         long lastTime = stopwatch.ElapsedTicks;
 
+        uint lastTick = 33;
         while (true)
         {
             long currentTime = stopwatch.ElapsedTicks;
             double deltaTime = (double)(currentTime - lastTime) / Stopwatch.Frequency;
             lastTime = currentTime;
             accumulatedTime += deltaTime;
-            Console.WriteLine($"[Server] Tick={currentTick}");
             while (network.TryReceivePacket()) { }
+            if (currentTick != lastTick)
+            {
+                Console.WriteLine($"[Server] Tick = {currentTick}");
+                lastTick = currentTick;
+            }
             // Client's latest GameState is at least (server)currentTick - inputDelay
             if (accumulatedTime >= fixedTimeStepSeconds && CanAdvanceTick(currentTick, clients, inputsByTick))
             {
@@ -91,7 +96,13 @@ public static class Program
                 FramePacket framePacket = GetFramePacket(currentTick, clients, inputsByTick, framePackets);
                 simulator.SimulateFrame(framePacket);
                 SendFramePacket(network, clients, framePacket);
-
+                if (currentTick >= 4)
+                {
+                    Console.WriteLine($"Checksum of tick {currentTick - 4}: {simulator.GetGameStateChecksum(currentTick - 4)}");
+                    Console.WriteLine($"Checksum of tick {currentTick - 3}: {simulator.GetGameStateChecksum(currentTick - 3)}");
+                    Console.WriteLine($"Checksum of tick {currentTick - 2}: {simulator.GetGameStateChecksum(currentTick - 2)}");
+                    Console.WriteLine($"Checksum of tick {currentTick - 1}: {simulator.GetGameStateChecksum(currentTick - 1)}");
+                }
                 inputsByTick.Remove(currentTick);
                 currentTick++;
             }

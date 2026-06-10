@@ -95,7 +95,13 @@ public class Client : MonoSingleton<Client>
         }
 
         simulator.SimulateFrame(framePacket);
-
+        if (currentFrame >= 4)
+        {
+            Debug.Log($"Checksum of tick {currentFrame - 4}: {simulator.GetGameStateChecksum(currentFrame - 4)}");
+            Debug.Log($"Checksum of tick {currentFrame - 3}: {simulator.GetGameStateChecksum(currentFrame - 3)}");
+            Debug.Log($"Checksum of tick {currentFrame - 2}: {simulator.GetGameStateChecksum(currentFrame - 2)}");
+            Debug.Log($"Checksum of tick {currentFrame - 1}: {simulator.GetGameStateChecksum(currentFrame - 1)}");
+        }
         return true;
     }
 
@@ -190,6 +196,7 @@ public class Client : MonoSingleton<Client>
     void OnFramePacketReceived(byte[] framePacket)
     {
         FramePacket packet = PacketCodec.ReadFramePacketBody(framePacket);
+        Debug.Log($"[Client] Received frame packet for tick={packet.tick}.");
         if (packet.tick < currentFrame)
         {
 #if UNITY_EDITOR
