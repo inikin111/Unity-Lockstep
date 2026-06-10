@@ -1,6 +1,8 @@
 using UnityEngine;
 using Lockstep.Packets;
 using System.Collections.Generic;
+using System;
+using System.IO;
 
 public class Client : MonoSingleton<Client>
 {
@@ -19,11 +21,13 @@ public class Client : MonoSingleton<Client>
     const double FixedTimeStepSeconds = 1.0 / 30.0; // 30 ticks per second
     const double MaxAccumulatedTimeSeconds = 0.25;
     const int MaxTicksPerUpdate = 4;
+    static readonly bool EnableGameStateFileLog = false;
     double accumulatedTime = 0.0;
     uint currentFrame = 0;
     uint clientId = 0;
     bool isConnected = false;
     bool isInitialized = false;
+    string gameStateLogPath;
 
     SortedDictionary<uint, FramePacket> pendingFrames = new SortedDictionary<uint, FramePacket>();
 
@@ -38,6 +42,12 @@ public class Client : MonoSingleton<Client>
     {
         clientNetwork.Initialize(OnResponseReceived, OnFramePacketReceived, Pos.ToVector3i());
         this.entityData = entityData;
+        if (EnableGameStateFileLog)
+        {
+            gameStateLogPath = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Logs", "client-gamestate.log"));
+            GameStateFileLogger.Reset(gameStateLogPath);
+            Debug.Log($"[Client] GameState log path: {gameStateLogPath}");
+        }
         isInitialized = true;
     }
     
@@ -51,7 +61,7 @@ public class Client : MonoSingleton<Client>
         clientNetwork.PumpReceivedPackets();
         if (!isConnected) return;
 
-        accumulatedTime = System.Math.Min(accumulatedTime + Time.deltaTime, MaxAccumulatedTimeSeconds);
+        accumulatedTime = accumulatedTime + Time.deltaTime;
         int simulatedTicks = 0;
         while (accumulatedTime >= FixedTimeStepSeconds && simulatedTicks < MaxTicksPerUpdate)
         {
@@ -79,29 +89,31 @@ public class Client : MonoSingleton<Client>
 
     bool Tick()
     {
-        // 需要校验framePacket是否连续
         clientNetwork.SendPacket(PacketType.Input, PacketCodec.InputPacketToBytes(CreateInputPacket()));
 
+        // 这里要注意下，一开始我直接跳过这个条件里的操作，后来经过Codex的探讨想到可能出现玩家重叠的情况，会导致服务端客户端差异
         if (currentFrame < InputDelay)
         {
-            simulator.CaptureGameState(currentFrame);
+            simulator.SimulateFrame(new FramePacket
+            {
+                tick = currentFrame,
+                inputs = Array.Empty<InputPacket>()
+            });
+            LogGameState("simulate");
             currentFrame++;
             return false;
         }
-        // 改成获取当前帧的FramePacket，ai说：如果没有则继续等待（当前帧丢包了，等下一帧的FramePacket过来时再丢弃掉），如果等了很久都没有收到当前帧的FramePacket，则发起重传请求
+
+        // 获取当前帧的FramePacket，没有维护可靠性机制
         if (!TryGetFramePacket(currentFrame, out FramePacket framePacket))
         {
             return false;
         }
 
         simulator.SimulateFrame(framePacket);
-        if (currentFrame >= 4)
-        {
-            Debug.Log($"Checksum of tick {currentFrame - 4}: {simulator.GetGameStateChecksum(currentFrame - 4)}");
-            Debug.Log($"Checksum of tick {currentFrame - 3}: {simulator.GetGameStateChecksum(currentFrame - 3)}");
-            Debug.Log($"Checksum of tick {currentFrame - 2}: {simulator.GetGameStateChecksum(currentFrame - 2)}");
-            Debug.Log($"Checksum of tick {currentFrame - 1}: {simulator.GetGameStateChecksum(currentFrame - 1)}");
-        }
+        LogGameState("simulate");
+        Debug.Log($"[Client] Simulated frame tick={currentFrame}, Checksum={simulator.GetGameStateChecksum(currentFrame)}.");
+
         return true;
     }
 
@@ -162,6 +174,7 @@ public class Client : MonoSingleton<Client>
         simulator.SetEntityState(entityData.states);
         simulator.SetEntityMotionConfigs(entityData.motionConfigs);
         simulator.CaptureGameState(currentFrame);
+        LogGameState("initial");
 
         gameRenderer.AddLocalPlayerUnit(packet.clientId, this.gameObject);
         gameRenderer.RenderFrame(simulator.gameStateHistory[currentFrame]);
@@ -184,8 +197,8 @@ public class Client : MonoSingleton<Client>
                 body = new CollisionBodyState
                 {
                     position = client.position,
-                    colliderSize = unit.colliderSize.ToVector3i(),
-                    colliderRadius = unit.colliderRadius.ToFixedInt(),
+                    colliderSize = Vector3i.One,
+                    colliderRadius = 0.5f.ToFixedInt(),
                     colliderType = ColliderType.Sphere
                 }
             };
@@ -206,6 +219,23 @@ public class Client : MonoSingleton<Client>
         }
 
         pendingFrames[packet.tick] = packet;
+    }
+
+    // 感谢伟大的QHW / inikin111 / 卧龙锅巴 给我指出了这里的操作
+    void LogGameState(string phase)
+    {
+        if (!EnableGameStateFileLog)
+        {
+            return;
+        }
+
+        GameStateFileLogger.Append(
+            gameStateLogPath,
+            "Client",
+            phase,
+            currentFrame,
+            simulator.gameStateHistory[currentFrame],
+            simulator.GetGameStateChecksum(currentFrame));
     }
 
     void EndGame()

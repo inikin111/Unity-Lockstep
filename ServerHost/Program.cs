@@ -17,6 +17,7 @@ public static class Program
     const uint maxClients = 1;
     const double fixedTimeStepSeconds = 1.0 / 30.0; // 30 ticks per second
     const uint inputDelay = 2;
+    static readonly bool enableGameStateFileLog = false;
     static uint currentTick = 0;
 
     static Simulator simulator = new Simulator();
@@ -26,11 +27,17 @@ public static class Program
     static Dictionary<uint, Dictionary<uint, InputPacket>> inputsByTick = new Dictionary<uint, Dictionary<uint, InputPacket>>();
     const uint maxBufferedFrames = 64;
     static FramePacket[] framePackets = new FramePacket[maxBufferedFrames];
+    static readonly string gameStateLogPath = Path.Combine(AppContext.BaseDirectory, "server-gamestate.log");
 
     public static void Main()
     {
         network = new Network();
         framePackets = new FramePacket[maxBufferedFrames];
+        if (enableGameStateFileLog)
+        {
+            GameStateFileLogger.Reset(gameStateLogPath);
+            Console.WriteLine($"[Server] GameState log path: {gameStateLogPath}");
+        }
 
         network.Initialize(
             OnConnectionRequest,
@@ -50,12 +57,6 @@ public static class Program
             position = connection.Position
         }).ToArray();
 
-        EntityData entityData = LoadEntityData();
-        simulator.SetPlayerState(CreatePlayerStates(positions));
-        simulator.SetEntityState(entityData.states);
-        simulator.SetEntityMotionConfigs(entityData.motionConfigs);
-        simulator.CaptureGameState(currentTick);
-
         foreach (var connection in pendingConnections)
         {
             ACKPacket responsePacket = new ACKPacket
@@ -68,6 +69,13 @@ public static class Program
             clients[connection.Value.ClientId] = new IPEndPoint(connection.Key.Address, connection.Key.Port);
             Console.WriteLine($"Sent connection response to {connection.Key.Address}:{connection.Key.Port}, assigned clientId={connection.Value.ClientId}");
         }
+
+        EntityData entityData = LoadEntityData();
+        simulator.SetPlayerState(CreatePlayerStates(positions));
+        simulator.SetEntityState(entityData.states);
+        simulator.SetEntityMotionConfigs(entityData.motionConfigs);
+        simulator.CaptureGameState(currentTick);
+        LogGameState("initial", currentTick);
 
         Console.WriteLine("Server started on udp://127.0.0.1:5478");
 
@@ -94,8 +102,11 @@ public static class Program
                 accumulatedTime -= fixedTimeStepSeconds;
 
                 FramePacket framePacket = GetFramePacket(currentTick, clients, inputsByTick, framePackets);
-                simulator.SimulateFrame(framePacket);
                 SendFramePacket(network, clients, framePacket);
+                
+                simulator.SimulateFrame(framePacket);
+                LogGameState("simulate", currentTick);
+
                 if (currentTick >= 4)
                 {
                     Console.WriteLine($"Checksum of tick {currentTick - 4}: {simulator.GetGameStateChecksum(currentTick - 4)}");
@@ -238,6 +249,22 @@ public static class Program
 
         framePackets[currentTick % framePackets.Length] = framePacket;
         return framePacket;
+    }
+
+    static void LogGameState(string phase, uint tick)
+    {
+        if (!enableGameStateFileLog)
+        {
+            return;
+        }
+
+        GameStateFileLogger.Append(
+            gameStateLogPath,
+            "Server",
+            phase,
+            tick,
+            simulator.gameStateHistory[tick],
+            simulator.GetGameStateChecksum(tick));
     }
 
     static EntityData LoadEntityData()

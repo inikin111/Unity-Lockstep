@@ -236,41 +236,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 64159a70879e6144a91c0ee12b74a432, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Client
-  entities:
-  - {fileID: 1098895978}
-  - {fileID: 1682501217}
-  - {fileID: 1160299613}
-  - {fileID: 976163256}
-  - {fileID: 1484509163}
-  - {fileID: 2090210996}
-  - {fileID: 710959072}
-  - {fileID: 1983953038}
-  - {fileID: 1440201796}
-  - {fileID: 1623978054}
-  - {fileID: 505437093}
-  - {fileID: 37874277}
-  - {fileID: 1097551001}
-  - {fileID: 368930057}
-  - {fileID: 1201368261}
-  - {fileID: 885785055}
-  - {fileID: 400076163}
-  - {fileID: 1805164352}
-  - {fileID: 208274917}
-  - {fileID: 1350461759}
-  - {fileID: 1332116318}
-  - {fileID: 2103660249}
-  - {fileID: 128128132}
-  - {fileID: 1205779765}
-  - {fileID: 1217846787}
-  - {fileID: 1302937267}
-  - {fileID: 954141761}
-  - {fileID: 1357637002}
-  - {fileID: 639919063}
-  - {fileID: 1534447328}
-  - {fileID: 1758816135}
-  - {fileID: 2003040252}
-  - {fileID: 66840172}
-  - {fileID: 2069851977}
 --- !u!4 &32476430
 Transform:
   m_ObjectHideFlags: 0
@@ -3622,6 +3587,85 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c548439a9ca831342a2ec9065c851123, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EntityUnit
+--- !u!1 &1691198364
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1691198366}
+  - component: {fileID: 1691198365}
+  m_Layer: 0
+  m_Name: GlobalManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1691198365
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1691198364}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2fa77a425a843547b26ec8a535a7ea6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GlobalManager
+  entities:
+  - {fileID: 1098895978}
+  - {fileID: 1484509163}
+  - {fileID: 1682501217}
+  - {fileID: 1160299613}
+  - {fileID: 976163256}
+  - {fileID: 2090210996}
+  - {fileID: 1440201796}
+  - {fileID: 1983953038}
+  - {fileID: 710959072}
+  - {fileID: 2069851977}
+  - {fileID: 1623978054}
+  - {fileID: 505437093}
+  - {fileID: 37874277}
+  - {fileID: 1097551001}
+  - {fileID: 368930057}
+  - {fileID: 1201368261}
+  - {fileID: 1758816135}
+  - {fileID: 885785055}
+  - {fileID: 400076163}
+  - {fileID: 1805164352}
+  - {fileID: 208274917}
+  - {fileID: 1350461759}
+  - {fileID: 1332116318}
+  - {fileID: 2103660249}
+  - {fileID: 66840172}
+  - {fileID: 128128132}
+  - {fileID: 1205779765}
+  - {fileID: 1217846787}
+  - {fileID: 1302937267}
+  - {fileID: 954141761}
+  - {fileID: 1357637002}
+  - {fileID: 639919063}
+  - {fileID: 1534447328}
+  - {fileID: 2003040252}
+--- !u!4 &1691198366
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1691198364}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 6.48231, y: 14.23679, z: -8.42148}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1700408882
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -5058,3 +5102,4 @@ SceneRoots:
   - {fileID: 606320789}
   - {fileID: 521476211}
   - {fileID: 1700408882}
+  - {fileID: 1691198366}

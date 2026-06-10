@@ -4,6 +4,16 @@
             "entityId": 0,
             "body": {
                 "colliderType": 1,
+                "position": {
+                    "x": 5730,
+                    "y": 500,
+                    "z": 3730
+                },
+                "colliderSize": {
+                    "x": 1000,
+                    "y": 1000,
+                    "z": 1000
+                },
                 "colliderRadius": 500
             }
         },
@@ -11,6 +21,16 @@
             "entityId": 1,
             "body": {
                 "colliderType": 1,
+                "position": {
+                    "x": 4450,
+                    "y": 500,
+                    "z": 2340
+                },
+                "colliderSize": {
+                    "x": 1000,
+                    "y": 1000,
+                    "z": 1000
+                },
                 "colliderRadius": 500
             }
         },
@@ -18,6 +38,16 @@
             "entityId": 2,
             "body": {
                 "colliderType": 1,
+                "position": {
+                    "x": 2290,
+                    "y": 500,
+                    "z": 1250
+                },
+                "colliderSize": {
+                    "x": 1000,
+                    "y": 1000,
+                    "z": 1000
+                },
                 "colliderRadius": 500
             }
         },
@@ -25,6 +55,16 @@
             "entityId": 3,
             "body": {
                 "colliderType": 1,
+                "position": {
+                    "x": -2420,
+                    "y": 500,
+                    "z": 830
+                },
+                "colliderSize": {
+                    "x": 1000,
+                    "y": 1000,
+                    "z": 1000
+                },
                 "colliderRadius": 500
             }
         },
@@ -32,6 +72,16 @@
             "entityId": 4,
             "body": {
                 "colliderType": 1,
+                "position": {
+                    "x": -2540,
+                    "y": 500,
+                    "z": 2620
+                },
+                "colliderSize": {
+                    "x": 1000,
+                    "y": 1000,
+                    "z": 1000
+                },
                 "colliderRadius": 500
             }
         },
@@ -39,6 +89,16 @@
             "entityId": 5,
             "body": {
                 "colliderType": 0,
+                "position": {
+                    "x": 1410,
+                    "y": 1500,
+                    "z": 5699
+                },
+                "colliderSize": {
+                    "x": 16000,
+                    "y": 3000,
+                    "z": 500
+                },
                 "colliderRadius": 8000
             }
         },
@@ -46,6 +106,16 @@
             "entityId": 6,
             "body": {
                 "colliderType": 0,
+                "position": {
+                    "x": 1410,
+                    "y": 1500,
+                    "z": -8020
+                },
+                "colliderSize": {
+                    "x": 16000,
+                    "y": 3000,
+                    "z": 500
+                },
                 "colliderRadius": 8000
             }
         },
@@ -53,6 +123,16 @@
             "entityId": 7,
             "body": {
                 "colliderType": 0,
+                "position": {
+                    "x": 9980,
+                    "y": 1500,
+                    "z": -970
+                },
+                "colliderSize": {
+                    "x": 500,
+                    "y": 3000,
+                    "z": 16000
+                },
                 "colliderRadius": 8000
             }
         },
@@ -60,6 +140,16 @@
             "entityId": 8,
             "body": {
                 "colliderType": 0,
+                "position": {
+                    "x": -7250,
+                    "y": 1500,
+                    "z": -970
+                },
+                "colliderSize": {
+                    "x": 500,
+                    "y": 3000,
+                    "z": 16000
+                },
                 "colliderRadius": 8000
             }
         },
@@ -67,6 +157,16 @@
             "entityId": 9,
             "body": {
                 "colliderType": 1,
+                "position": {
+                    "x": 650,
+                    "y": 500,
+                    "z": 770
+                },
+                "colliderSize": {
+                    "x": 1000,
+                    "y": 1000,
+                    "z": 1000
+                },
                 "colliderRadius": 500
             }
         },
@@ -74,6 +174,16 @@
             "entityId": 10,
             "body": {
                 "colliderType": 1,
+                "position": {
+                    "x": -2030,
+                    "y": 500,
+                    "z": -750
+                },
+                "colliderSize": {
+                    "x": 1000,
+                    "y": 1000,
+                    "z": 1000
+                },
                 "colliderRadius": 500
             }
         },
@@ -81,6 +191,16 @@
             "entityId": 11,
             "body": {
                 "colliderType": 1,
+                "position": {
+                    "x": 210,
+                    "y": 500,
+                    "z": -1020
+                },
+                "colliderSize": {
+                    "x": 1000,
+                    "y": 1000,
+                    "z": 1000
+                },
                 "colliderRadius": 500
             }
         },
@@ -88,6 +208,16 @@
             "entityId": 12,
             "body": {
                 "colliderType": 1,
+                "position": {
+                    "x": -5680,
+                    "y": 500,
+                    "z": -340
+                },
+                "colliderSize": {
+                    "x": 1000,
+                    "y": 1000,
+                    "z": 1000
+                },
                 "colliderRadius": 500
             }
         },
@@ -95,6 +225,16 @@
             "entityId": 13,
             "body": {
                 "colliderType": 1,
+                "position": {
+                    "x": 140,
+                    "y": 500,
+                    "z": 3020
+                },
+                "colliderSize": {
+                    "x": 1000,
+                    "y": 1000,
+                    "z": 1000
+                },
                 "colliderRadius": 500
             }
         },
@@ -102,6 +242,16 @@
             "entityId": 14,
             "body": {
                 "colliderType": 1,
+                "position": {
+                    "x": -3620,
+                    "y": 500,
+                    "z": 1790
+                },
+                "colliderSize": {
+                    "x": 1000,
+                    "y": 1000,
+                    "z": 1000
+                },
                 "colliderRadius": 500
             }
         },
@@ -109,6 +259,16 @@
             "entityId": 15,
             "body": {
                 "colliderType": 1,
+                "position": {
+                    "x": 2050,
+                    "y": 500,
+                    "z": 3120
+                },
+                "colliderSize": {
+                    "x": 1000,
+                    "y": 1000,
+                    "z": 1000
+                },
                 "colliderRadius": 500
             }
         },
@@ -116,6 +276,16 @@
             "entityId": 16,
             "body": {
                 "colliderType": 1,
+                "position": {
+                    "x": -3850,
+                    "y": 500,
+                    "z": 300
+                },
+                "colliderSize": {
+                    "x": 1000,
+                    "y": 1000,
+                    "z": 1000
+                },
                 "colliderRadius": 500
             }
         },
@@ -123,6 +293,16 @@
             "entityId": 17,
             "body": {
                 "colliderType": 1,
+                "position": {
+                    "x": -1230,
+                    "y": 500,
+                    "z": 1800
+                },
+                "colliderSize": {
+                    "x": 1000,
+                    "y": 1000,
+                    "z": 1000
+                },
                 "colliderRadius": 500
             }
         },
@@ -130,6 +310,16 @@
             "entityId": 18,
             "body": {
                 "colliderType": 1,
+                "position": {
+                    "x": -920,
+                    "y": 500,
+                    "z": 480
+                },
+                "colliderSize": {
+                    "x": 1000,
+                    "y": 1000,
+                    "z": 1000
+                },
                 "colliderRadius": 500
             }
         },
@@ -137,6 +327,16 @@
             "entityId": 19,
             "body": {
                 "colliderType": 1,
+                "position": {
+                    "x": 8860,
+                    "y": 500,
+                    "z": -1220
+                },
+                "colliderSize": {
+                    "x": 1000,
+                    "y": 1000,
+                    "z": 1000
+                },
                 "colliderRadius": 500
             }
         },
@@ -144,6 +344,16 @@
             "entityId": 20,
             "body": {
                 "colliderType": 1,
+                "position": {
+                    "x": 5420,
+                    "y": 500,
+                    "z": -3700
+                },
+                "colliderSize": {
+                    "x": 1000,
+                    "y": 1000,
+                    "z": 1000
+                },
                 "colliderRadius": 500
             }
         },
@@ -151,6 +361,16 @@
             "entityId": 21,
             "body": {
                 "colliderType": 1,
+                "position": {
+                    "x": 7580,
+                    "y": 500,
+                    "z": -2610
+                },
+                "colliderSize": {
+                    "x": 1000,
+                    "y": 1000,
+                    "z": 1000
+                },
                 "colliderRadius": 500
             }
         },
@@ -158,6 +378,16 @@
             "entityId": 22,
             "body": {
                 "colliderType": 1,
+                "position": {
+                    "x": 710,
+                    "y": 500,
+                    "z": -4120
+                },
+                "colliderSize": {
+                    "x": 1000,
+                    "y": 1000,
+                    "z": 1000
+                },
                 "colliderRadius": 500
             }
         },
@@ -165,6 +395,16 @@
             "entityId": 23,
             "body": {
                 "colliderType": 1,
+                "position": {
+                    "x": 590,
+                    "y": 500,
+                    "z": -2330
+                },
+                "colliderSize": {
+                    "x": 1000,
+                    "y": 1000,
+                    "z": 1000
+                },
                 "colliderRadius": 500
             }
         },
@@ -172,6 +412,16 @@
             "entityId": 24,
             "body": {
                 "colliderType": 1,
+                "position": {
+                    "x": 3780,
+                    "y": 500,
+                    "z": -4180
+                },
+                "colliderSize": {
+                    "x": 1000,
+                    "y": 1000,
+                    "z": 1000
+                },
                 "colliderRadius": 500
             }
         },
@@ -179,6 +429,16 @@
             "entityId": 25,
             "body": {
                 "colliderType": 1,
+                "position": {
+                    "x": 1100,
+                    "y": 500,
+                    "z": -5700
+                },
+                "colliderSize": {
+                    "x": 1000,
+                    "y": 1000,
+                    "z": 1000
+                },
                 "colliderRadius": 500
             }
         },
@@ -186,6 +446,16 @@
             "entityId": 26,
             "body": {
                 "colliderType": 1,
+                "position": {
+                    "x": 3340,
+                    "y": 500,
+                    "z": -5970
+                },
+                "colliderSize": {
+                    "x": 1000,
+                    "y": 1000,
+                    "z": 1000
+                },
                 "colliderRadius": 500
             }
         },
@@ -193,6 +463,16 @@
             "entityId": 27,
             "body": {
                 "colliderType": 1,
+                "position": {
+                    "x": -2550,
+                    "y": 500,
+                    "z": -5290
+                },
+                "colliderSize": {
+                    "x": 1000,
+                    "y": 1000,
+                    "z": 1000
+                },
                 "colliderRadius": 500
             }
         },
@@ -200,6 +480,16 @@
             "entityId": 28,
             "body": {
                 "colliderType": 1,
+                "position": {
+                    "x": 3270,
+                    "y": 500,
+                    "z": -1930
+                },
+                "colliderSize": {
+                    "x": 1000,
+                    "y": 1000,
+                    "z": 1000
+                },
                 "colliderRadius": 500
             }
         },
@@ -207,6 +497,16 @@
             "entityId": 29,
             "body": {
                 "colliderType": 1,
+                "position": {
+                    "x": -490,
+                    "y": 500,
+                    "z": -3160
+                },
+                "colliderSize": {
+                    "x": 1000,
+                    "y": 1000,
+                    "z": 1000
+                },
                 "colliderRadius": 500
             }
         },
@@ -214,6 +514,16 @@
             "entityId": 30,
             "body": {
                 "colliderType": 1,
+                "position": {
+                    "x": 5180,
+                    "y": 500,
+                    "z": -1830
+                },
+                "colliderSize": {
+                    "x": 1000,
+                    "y": 1000,
+                    "z": 1000
+                },
                 "colliderRadius": 500
             }
         },
@@ -221,6 +531,16 @@
             "entityId": 31,
             "body": {
                 "colliderType": 1,
+                "position": {
+                    "x": -720,
+                    "y": 500,
+                    "z": -4650
+                },
+                "colliderSize": {
+                    "x": 1000,
+                    "y": 1000,
+                    "z": 1000
+                },
                 "colliderRadius": 500
             }
         },
@@ -228,6 +548,16 @@
             "entityId": 32,
             "body": {
                 "colliderType": 1,
+                "position": {
+                    "x": 1900,
+                    "y": 500,
+                    "z": -3150
+                },
+                "colliderSize": {
+                    "x": 1000,
+                    "y": 1000,
+                    "z": 1000
+                },
                 "colliderRadius": 500
             }
         },
@@ -235,6 +565,16 @@
             "entityId": 33,
             "body": {
                 "colliderType": 1,
+                "position": {
+                    "x": 2210,
+                    "y": 500,
+                    "z": -4470
+                },
+                "colliderSize": {
+                    "x": 1000,
+                    "y": 1000,
+                    "z": 1000
+                },
                 "colliderRadius": 500
             }
         }
