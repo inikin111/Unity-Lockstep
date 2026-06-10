@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Lockstep.Packets;
-using UnityEngine;
 
 sealed class EntityMotionRuntime
 {
@@ -20,15 +19,12 @@ public class Simulator
     public Dictionary<uint, EntityState> entityStates { get; private set; } = new Dictionary<uint, EntityState>();
     readonly Dictionary<uint, EntityMotionRuntime> entityMotionStates = new Dictionary<uint, EntityMotionRuntime>();
     // 模拟层保存10tick历史状态
-    public RingBuffer<GameState> gameStateHistory = new RingBuffer<GameState>(10);
+    public RingBuffer<GameState> gameStateHistory = new RingBuffer<GameState>(50);
     // 拿脚填的数值
     int moveSpeedPerTick = 200;
 
     public void SimulateFrame(FramePacket framePacket)
     {
-#if UNITY_EDITOR
-        Debug.Log($"[Simulator] Tick={framePacket.tick}, inputCount={(framePacket.inputs == null ? 0 : framePacket.inputs.Length)}");
-#endif
         ApplyFrameInputs(framePacket);
         CalculateMovement();
         SimulateEntityMotion();
@@ -40,18 +36,12 @@ public class Simulator
     {
         if (players.Length == 0)
         {
-#if UNITY_EDITOR
-            UnityEngine.Debug.LogWarning("No Player");
-#endif
             return;
         }
 
         foreach (PlayerState player in players)
         {
             playerStates[player.clientId] = player;
-#if UNITY_EDITOR
-            UnityEngine.Debug.Log($"[Simulator] Sync clientId={player.clientId}, commandType={player.commandType}");
-#endif
         }
     }
 
@@ -59,9 +49,6 @@ public class Simulator
     {
         if (entities.Length == 0)
         {
-#if UNITY_EDITOR
-            UnityEngine.Debug.LogWarning("No Entity");
-#endif
             return;
         }
 
@@ -111,9 +98,6 @@ public class Simulator
                     break;
             }
             playerStates[input.clientId] = playerState;
-#if UNITY_EDITOR
-            UnityEngine.Debug.Log($"[Simulator] Input clientId={input.clientId}, commandType={input.commandType}, target={playerState.targetPosition}");
-#endif
         }
     }
 
@@ -129,24 +113,16 @@ public class Simulator
                 Vector3i previousPosition = state.position;
                 Vector3i delta = state.targetPosition - state.position;
                 int distanceToTarget = Vector3i.Distance(state.position, state.targetPosition);
-#if UNITY_EDITOR
-                UnityEngine.Debug.Log($"[Simulator] Move clientId={clientId}, from={state.position}, target={state.targetPosition}, delta={delta}, dist={distanceToTarget}, moveSpeedPerTick={moveSpeedPerTick}");
-#endif
+
                 if (distanceToTarget <= moveSpeedPerTick)
                 {
                     state.position = state.targetPosition; // 到达目标位置
                     state.commandType = CommandType.None; // 停止移动
-#if UNITY_EDITOR
-                    UnityEngine.Debug.Log($"[Simulator] Arrived clientId={clientId}, position={state.position}");
-#endif
                 }
                 else
                 {
                     Vector3i step = delta.ScaleTo(moveSpeedPerTick);
                     state.position += step;
-#if UNITY_EDITOR
-                    UnityEngine.Debug.Log($"[Simulator] Step clientId={clientId}, step={step}, newPosition={state.position}");
-#endif   
                 }
 
                 state.frameVelocity = state.position - previousPosition;
@@ -174,9 +150,6 @@ public class Simulator
 
     void SaveGameState(uint tick)
     {
-#if UNITY_EDITOR
-        Debug.Log($"[Simulator] Saving game state for tick {tick}...");
-#endif
         gameStateHistory[tick] = new GameState
         {
             playerStates = playerStates.Values.ToArray(),
@@ -191,9 +164,6 @@ public class Simulator
 
     public void CaptureGameState(uint tick)
     {
-#if UNITY_EDITOR
-        Debug.Log($"[Simulator] Capturing game state for tick {tick}");
-#endif
         SaveGameState(tick);
     }
 
@@ -355,9 +325,6 @@ public class Simulator
         Vector3i half = separation.DivideByScalar(2);
         stateA.position -= half;
         stateB.position += separation - half;
-#if UNITY_EDITOR
-        UnityEngine.Debug.Log($"[Collision] Player-Player Sphere: {playerA} <-> {playerB}");
-#endif
     }
 
     void HandlePlayerEntityCollisionSphere(uint playerId, uint entityId, ref PlayerState player, ref EntityState entity)
@@ -380,9 +347,6 @@ public class Simulator
         {
             player.position -= separation;
         }
-#if UNITY_EDITOR
-        UnityEngine.Debug.Log($"[Collision] Player-Entity Sphere: playerId={playerId} <-> entityId={entityId}");
-#endif
     }
 
     void HandlePlayerEntityCollisionWall(uint playerId, uint entityId, ref PlayerState player, ref EntityState entity)
@@ -394,9 +358,6 @@ public class Simulator
 
         Vector3i separation = normal.ScaleTo(penetration);
         player.position += separation;
-#if UNITY_EDITOR
-        UnityEngine.Debug.Log($"[Collision] Player-Entity Box: playerId={playerId} <-> entityId={entityId}, normal={normal}, penetration={penetration}");
-#endif
     }
 
     // sphereEntityId is the dynamic sphere candidate, wallEntityId is the static box.
@@ -445,9 +406,6 @@ public class Simulator
             stateB.position += separation;
             ReflectDynamicEntityFromStatic(motionB, -normal);
         }
-#if UNITY_EDITOR
-        UnityEngine.Debug.Log($"[Collision] Entity-Entity Sphere: {entityA} <-> {entityB}");
-#endif
     }
 
     static bool TryGetSphereCollision(CollisionBodyState body1, CollisionBodyState body2, out Vector3i normal, out int penetration)
@@ -527,9 +485,6 @@ public class Simulator
         Vector3i normalVelocity = normal.ScaleTo(Vector3i.Dot(motion.velocity, normal));
         Vector3i tangentialVelocity = motion.velocity - normalVelocity.MultiplyByScalar(5);
         motion.velocity = tangentialVelocity + normal.ScaleTo(bounceSpeed);
-#if UNITY_EDITOR
-        UnityEngine.Debug.Log($"[Collision] Player hit Entity: playerVelocity={playerVelocity}, entityVelocity={motion.velocity}, normal={normal}, approachSpeed={approachSpeed}, transferSpeed={transferSpeed}, bounceSpeed={bounceSpeed}");
-#endif
     }
 
     void ResolveEntityCollision(EntityMotionRuntime motionA, EntityMotionRuntime motionB, Vector3i normal)
@@ -563,7 +518,7 @@ public class Simulator
     void ReflectDynamicEntityFromStatic(EntityMotionRuntime motion, Vector3i normal)
     {
         int approachSpeed = Vector3i.Dot(motion.velocity, normal);
-        Debug.Log($"[Collision] Reflect Entity from Static: entityVelocity={motion.velocity}, normal={normal}, approachSpeed={approachSpeed}");
+
         if (approachSpeed <= 0)
         {
             return;

@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
+using System.Text.Json;
 using Lockstep.Packets;
 namespace ServerHost;
 
@@ -13,10 +14,12 @@ public static class Program
 
     static Network? network;
     static uint connectedClientCount = 0;
-    const uint maxClients = 2;
+    const uint maxClients = 1;
     const double fixedTimeStepSeconds = 1.0 / 30.0; // 30 ticks per second
     const uint inputDelay = 2;
     static uint currentTick = 0;
+
+    static Simulator simulator = new Simulator();
     
     static Dictionary<IPEndPoint, PendingClient> pendingConnections = new();
     static Dictionary<uint, IPEndPoint> clients = new Dictionary<uint, IPEndPoint>();
@@ -48,6 +51,10 @@ public static class Program
         }).ToArray();
 
         EntityData entityData = LoadEntityData();
+        simulator.SetPlayerState(CreatePlayerStates(positions));
+        simulator.SetEntityState(entityData.states);
+        simulator.SetEntityMotionConfigs(entityData.motionConfigs);
+        simulator.CaptureGameState(currentTick);
 
         foreach (var connection in pendingConnections)
         {
@@ -74,14 +81,15 @@ public static class Program
             double deltaTime = (double)(currentTime - lastTime) / Stopwatch.Frequency;
             lastTime = currentTime;
             accumulatedTime += deltaTime;
-
+            Console.WriteLine($"[Server] Tick={currentTick}");
             while (network.TryReceivePacket()) { }
-
+            // Client's latest GameState is at least (server)currentTick - inputDelay
             if (accumulatedTime >= fixedTimeStepSeconds && CanAdvanceTick(currentTick, clients, inputsByTick))
             {
                 accumulatedTime -= fixedTimeStepSeconds;
 
                 FramePacket framePacket = GetFramePacket(currentTick, clients, inputsByTick, framePackets);
+                simulator.SimulateFrame(framePacket);
                 SendFramePacket(network, clients, framePacket);
 
                 inputsByTick.Remove(currentTick);
@@ -226,7 +234,7 @@ public static class Program
         string path = Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\Assets\Scripts\Shared\entityData.json");
 
         string json = File.ReadAllText(path);
-        return entityData = JsonSerializer.Deserialize<EntityData>(
+        return JsonSerializer.Deserialize<EntityData>(
             json,
             new JsonSerializerOptions
             {
@@ -234,5 +242,29 @@ public static class Program
                 PropertyNameCaseInsensitive = true
             }
         );
+    }
+
+    static PlayerState[] CreatePlayerStates(ClientPos[] clientPos)
+    {
+        PlayerState[] players = new PlayerState[clientPos.Length];
+        int index = 0;
+        foreach (ClientPos client in clientPos)
+        {
+            players[index++] = new PlayerState
+            {
+                clientId = client.id,
+                commandType = CommandType.None,
+                targetPosition = Vector3i.Zero,
+                frameVelocity = Vector3i.Zero,
+                body = new CollisionBodyState
+                {
+                    position = client.position,
+                    colliderSize = Vector3i.One,
+                    colliderRadius = 0.5f.ToFixedInt(),
+                    colliderType = ColliderType.Sphere
+                }
+            };
+        }
+        return players;
     }
 }

@@ -49,12 +49,12 @@ public class ClientNetwork
             clientPos = position
         };
 
-        SendPacket(PacketType.ACK, Codec.ACKPacketToBytes(packet));
+        SendPacket(PacketType.ACK, PacketCodec.ACKPacketToBytes(packet));
     }
 
     public void SendPacket(PacketType packetType, byte[] payload)
     {
-        byte[] header = Codec.PacketHeaderToBytes(new PacketHeader { packetType = packetType });
+        byte[] header = PacketCodec.PacketHeaderToBytes(new PacketHeader { packetType = packetType });
         byte[] data = new byte[header.Length + payload.Length];
         Buffer.BlockCopy(header, 0, data, 0, header.Length);
         Buffer.BlockCopy(payload, 0, data, header.Length, payload.Length);
@@ -138,7 +138,7 @@ public class ClientNetwork
 
     void HandleReceivedPacket(byte[] data)
     {
-        PacketHeader header = Codec.ReadPacketHeaderFromBytes(data);
+        PacketHeader header = PacketCodec.ReadPacketHeaderFromBytes(data);
         switch (header.packetType)
         {
             case PacketType.ACK:

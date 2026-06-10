@@ -2,7 +2,7 @@ using System;
 
 namespace Lockstep.Packets
 {
-    public static class Codec
+    public static class PacketCodec
     {
         const int InputPacketLength = (sizeof(uint) * 2) + (sizeof(int) * 3) + sizeof(CommandType);
         const int FramePacketHeaderLength = sizeof(uint);

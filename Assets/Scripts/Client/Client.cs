@@ -80,7 +80,7 @@ public class Client : MonoSingleton<Client>
     bool Tick()
     {
         // 需要校验framePacket是否连续
-        clientNetwork.SendPacket(PacketType.Input, Codec.InputPacketToBytes(CreateInputPacket()));
+        clientNetwork.SendPacket(PacketType.Input, PacketCodec.InputPacketToBytes(CreateInputPacket()));
 
         if (currentFrame < InputDelay)
         {
@@ -147,7 +147,7 @@ public class Client : MonoSingleton<Client>
 
     void OnResponseReceived(byte[] data)
     {
-        ACKPacket packet = Codec.ReadACKPacketBody(data);
+        ACKPacket packet = PacketCodec.ReadACKPacketBody(data);
         clientId = packet.clientId;
 
         UIManager.Instance.SetClientId(clientId);
@@ -156,6 +156,7 @@ public class Client : MonoSingleton<Client>
         simulator.SetEntityState(entityData.states);
         simulator.SetEntityMotionConfigs(entityData.motionConfigs);
         simulator.CaptureGameState(currentFrame);
+
         gameRenderer.AddLocalPlayerUnit(packet.clientId, this.gameObject);
         gameRenderer.RenderFrame(simulator.gameStateHistory[currentFrame]);
 
@@ -177,7 +178,7 @@ public class Client : MonoSingleton<Client>
                 body = new CollisionBodyState
                 {
                     position = client.position,
-                    colliderSize = new Vector3i(300, 300, 300),
+                    colliderSize = unit.colliderSize.ToVector3i(),
                     colliderRadius = unit.colliderRadius.ToFixedInt(),
                     colliderType = ColliderType.Sphere
                 }
@@ -188,7 +189,7 @@ public class Client : MonoSingleton<Client>
 
     void OnFramePacketReceived(byte[] framePacket)
     {
-        FramePacket packet = Codec.ReadFramePacketBody(framePacket);
+        FramePacket packet = PacketCodec.ReadFramePacketBody(framePacket);
         if (packet.tick < currentFrame)
         {
 #if UNITY_EDITOR
