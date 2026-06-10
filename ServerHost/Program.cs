@@ -24,6 +24,7 @@ public static class Program
     
     static Dictionary<IPEndPoint, PendingClient> pendingConnections = new();
     static Dictionary<uint, IPEndPoint> clients = new Dictionary<uint, IPEndPoint>();
+    // TODO:改成RingBuffer
     static Dictionary<uint, Dictionary<uint, InputPacket>> inputsByTick = new Dictionary<uint, Dictionary<uint, InputPacket>>();
     const uint maxBufferedFrames = 64;
     static FramePacket[] framePackets = new FramePacket[maxBufferedFrames];
