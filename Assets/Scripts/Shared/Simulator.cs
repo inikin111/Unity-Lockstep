@@ -585,6 +585,7 @@ public class Simulator
         Vector3i normalVelocity = normal.ScaleTo(Vector3i.Dot(motion.velocity, normal));
         Vector3i tangentialVelocity = motion.velocity - normalVelocity.MultiplyByScalar(5);
         motion.velocity = tangentialVelocity + normal.ScaleTo(bounceSpeed);
+        motion.velocity = motion.velocity.ClampMagnitude(motion.maxSpeedPerTick);
     }
 
     void ResolveEntityCollision(EntityMotionRuntime motionA, EntityMotionRuntime motionB, Vector3i normal)

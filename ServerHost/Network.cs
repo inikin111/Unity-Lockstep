@@ -67,11 +67,6 @@ public class Network
             return false;
         }
 
-        if (remoteEndPoint == null)
-        {
-            remoteEndPoint = new IPEndPoint(IPAddress.Any, 0);
-        }
-
         byte[] data = server.Receive(ref remoteEndPoint);
         
         if (data.Length == 0)

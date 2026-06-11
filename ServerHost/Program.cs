@@ -31,6 +31,7 @@ public static partial class Program
     static readonly string gameStateLogPath = Path.Combine(AppContext.BaseDirectory, "server-gamestate.log");
     static ServerState serverState = ServerState.WaitingForPlayers;
 
+    // Main -> IninNetwork -> Pump -> ProcessRequests (Connection, Sync) -> SendFrame -> Simulate -> next loop
     public static void Main()
     {
         if (enableGameStateFileLog)
@@ -49,14 +50,15 @@ public static partial class Program
         
         while (true)
         {
+            // network.ReceivePacket();
+            while (network.TryReceivePacket()) {}
+            ProcessConnectionRequests();
+            ProcessSyncRequests();
+
             long currentTime = stopwatch.ElapsedTicks;
             double deltaTime = (double)(currentTime - lastTime) / Stopwatch.Frequency;
             lastTime = currentTime;
             accumulatedTime += deltaTime;
-
-            network.ReceivePacket();
-            ProcessConnectionRequests();
-            ProcessSyncRequests();
 
             while (serverState == ServerState.Running && accumulatedTime >= fixedTimeStepSeconds)
             {
@@ -274,7 +276,7 @@ public static partial class Program
                 continue;
             }
 
-            simulator.SetPlayerState(new[] { CreatePlayerState(join.ClientId, join.SpawnPosition) });
+            simulator.SetPlayerState([CreatePlayerState(join.ClientId, join.SpawnPosition)]);
             simulator.CaptureGameState(tick);
             Console.WriteLine($"[Server] Applied player join clientId={join.ClientId}, tick={tick}.");
         }
