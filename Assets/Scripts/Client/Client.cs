@@ -69,10 +69,15 @@ public class Client : MonoSingleton<Client>
         if (!isConnected) return;
 
         accumulatedTime = accumulatedTime + Time.deltaTime;
+
         int simulatedTicks = 0;
-        while (accumulatedTime >= FixedTimeStepSeconds && simulatedTicks < MaxTicksPerUpdate)
+        while ((accumulatedTime >= FixedTimeStepSeconds || pendingFrames.Count > InputDelay) && simulatedTicks < MaxTicksPerUpdate)
         {
-            accumulatedTime -= FixedTimeStepSeconds;
+            if (accumulatedTime >= FixedTimeStepSeconds)
+            {
+                accumulatedTime -= FixedTimeStepSeconds;
+            }
+
             uint frameBeforeTick = currentFrame;
             if (Tick())
             {
