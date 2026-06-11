@@ -60,7 +60,7 @@ ServerHost/
   Program.cs
   Network.cs
   ServerHost.csproj
-  ConnectionFlowReference.md
+  ConnectionFlow.md
 
 Packages/
   manifest.json
@@ -117,7 +117,7 @@ ProjectSettings/
 - 同步推进服务端权威模拟
 - 为状态同步与补发历史帧提供基础支持
 
-[`ServerHost/ConnectionFlowReference.md`](./ServerHost/ConnectionFlowReference.md) 还保留了一份连接流程草图，便于继续迭代连接/重连状态机。
+[`ServerHost/ConnectionFlow.md`](./ServerHost/ConnectionFlow.md) 用 Mermaid 流程图整理了首连、运行中加入、断线重连和状态同步的主流程，更适合快速阅读和展示。
 
 ## 运行方式
 
