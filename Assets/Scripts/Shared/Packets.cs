@@ -11,11 +11,12 @@ namespace Lockstep.Packets
 
     public enum PacketType : byte
     {
-        Input,
-        Frame,
-        ACK,
-        StateSync,
-        ResendFrame
+        Input,       // 客户端发送玩家输入数据
+        Frame,       // 汇总帧数据
+        ACK,         // 连接请求和确认应答
+        StateSync,   // 服务端发送游戏状态快照
+        ResendFrame, // 主动请求补发
+        PlayerJoin   // 玩家加入通知
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -39,6 +40,14 @@ namespace Lockstep.Packets
         public uint lastReceivedTick;
         public uint requestedTick;
         public FramePacket[] framePackets;
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public struct PlayerJoinPacket
+    {
+        public uint clientId;
+        public uint joinTick;
+        public Vector3i spawnPosition;
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]

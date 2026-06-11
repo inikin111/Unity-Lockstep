@@ -3,6 +3,7 @@ using Lockstep.Packets;
 using System.Collections.Generic;
 using System;
 using System.IO;
+using System.Linq;
 
 public class Client : MonoSingleton<Client>
 {
@@ -30,6 +31,7 @@ public class Client : MonoSingleton<Client>
     string gameStateLogPath;
 
     SortedDictionary<uint, FramePacket> pendingFrames = new SortedDictionary<uint, FramePacket>();
+    SortedDictionary<uint, List<PlayerJoinPacket>> pendingJoins = new SortedDictionary<uint, List<PlayerJoinPacket>>();
 
     void Awake()
     {
@@ -40,7 +42,12 @@ public class Client : MonoSingleton<Client>
 
     public void Initialize(EntityData entityData)
     {
-        clientNetwork.Initialize(OnResponseReceived, OnFramePacketReceived, Pos.ToVector3i());
+        clientNetwork.Initialize(
+            OnResponseReceived,
+            OnFramePacketReceived,
+            OnStateSyncPacketReceived,
+            OnPlayerJoinPacketReceived,
+            Pos.ToVector3i());
         this.entityData = entityData;
         if (EnableGameStateFileLog)
         {
@@ -89,6 +96,7 @@ public class Client : MonoSingleton<Client>
 
     bool Tick()
     {
+        ApplyPlayerJoins(currentFrame);
         clientNetwork.SendPacket(PacketType.Input, PacketCodec.InputPacketToBytes(CreateInputPacket()));
 
         // 这里要注意下，一开始我直接跳过这个条件里的操作，后来经过Codex的探讨想到可能出现玩家重叠的情况，会导致服务端客户端差异
@@ -169,6 +177,12 @@ public class Client : MonoSingleton<Client>
         clientId = packet.clientId;
 
         UIManager.Instance.SetClientId(clientId);
+        gameRenderer.AddLocalPlayerUnit(packet.clientId, this.gameObject);
+
+        if (packet.clientPos.Length == 0)
+        {
+            return;
+        }
 
         simulator.SetPlayerState(CreatePlayerState(packet.clientPos));
         simulator.SetEntityState(entityData.states);
@@ -176,7 +190,6 @@ public class Client : MonoSingleton<Client>
         simulator.CaptureGameState(currentFrame);
         LogGameState("initial");
 
-        gameRenderer.AddLocalPlayerUnit(packet.clientId, this.gameObject);
         gameRenderer.RenderFrame(simulator.gameStateHistory[currentFrame]);
 
         isConnected = true;
@@ -188,20 +201,7 @@ public class Client : MonoSingleton<Client>
         int index = 0;
         foreach (ClientPos client in clientPos)
         {
-            players[index++] = new PlayerState
-            {
-                clientId = client.id,
-                commandType = CommandType.None,
-                targetPosition = Vector3i.Zero,
-                frameVelocity = Vector3i.Zero,
-                body = new CollisionBodyState
-                {
-                    position = client.position,
-                    colliderSize = Vector3i.One,
-                    colliderRadius = 0.5f.ToFixedInt(),
-                    colliderType = ColliderType.Sphere
-                }
-            };
+            players[index++] = CreatePlayerState(client.id, client.position);
         }
         return players;
     }
@@ -219,6 +219,75 @@ public class Client : MonoSingleton<Client>
         }
 
         pendingFrames[packet.tick] = packet;
+    }
+
+    void OnStateSyncPacketReceived(byte[] data)
+    {
+        StateSyncPacket packet = PacketCodec.ReadStateSyncPacketBody(data);
+        simulator.SetEntityMotionConfigs(entityData.motionConfigs);
+        simulator.gameStateHistory[packet.tick] = packet.gameState;
+        simulator.LoadGameState(packet.tick);
+        currentFrame = packet.tick + 1;
+
+        List<uint> staleTicks = pendingFrames.Keys
+            .Where(tick => tick < currentFrame)
+            .ToList();
+        foreach (uint staleTick in staleTicks)
+        {
+            pendingFrames.Remove(staleTick);
+        }
+
+        gameRenderer.RenderFrame(simulator.gameStateHistory[packet.tick]);
+        isConnected = true;
+        Debug.Log($"[Client] State sync loaded tick={packet.tick}; nextFrame={currentFrame}.");
+    }
+
+    void OnPlayerJoinPacketReceived(byte[] data)
+    {
+        PlayerJoinPacket packet = PacketCodec.ReadPlayerJoinPacketBody(data);
+        if (!pendingJoins.TryGetValue(packet.joinTick, out List<PlayerJoinPacket> joins))
+        {
+            joins = new List<PlayerJoinPacket>();
+            pendingJoins[packet.joinTick] = joins;
+        }
+
+        joins.RemoveAll(join => join.clientId == packet.clientId);
+        joins.Add(packet);
+        Debug.Log($"[Client] Queued player join clientId={packet.clientId}, joinTick={packet.joinTick}.");
+    }
+
+    void ApplyPlayerJoins(uint tick)
+    {
+        if (!pendingJoins.TryGetValue(tick, out List<PlayerJoinPacket> joins))
+        {
+            return;
+        }
+
+        foreach (PlayerJoinPacket join in joins)
+        {
+            simulator.SetPlayerState(new[] { CreatePlayerState(join.clientId, join.spawnPosition) });
+            Debug.Log($"[Client] Applied player join clientId={join.clientId}, tick={tick}.");
+        }
+
+        pendingJoins.Remove(tick);
+    }
+
+    PlayerState CreatePlayerState(uint id, Vector3i position)
+    {
+        return new PlayerState
+        {
+            clientId = id,
+            commandType = CommandType.None,
+            targetPosition = Vector3i.Zero,
+            frameVelocity = Vector3i.Zero,
+            body = new CollisionBodyState
+            {
+                position = position,
+                colliderSize = Vector3i.One,
+                colliderRadius = 0.5f.ToFixedInt(),
+                colliderType = ColliderType.Sphere
+            }
+        };
     }
 
     // 感谢伟大的QHW / inikin111 / 卧龙锅巴 给我指出了这里的操作

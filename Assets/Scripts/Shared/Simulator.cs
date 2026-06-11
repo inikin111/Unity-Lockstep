@@ -169,7 +169,20 @@ public class Simulator
         {
             if (!playerStates.TryGetValue(input.clientId, out PlayerState playerState))
             {
-                playerState = new PlayerState();
+                playerState = new PlayerState
+                {
+                    clientId = input.clientId,
+                    commandType = CommandType.None,
+                    targetPosition = Vector3i.Zero,
+                    frameVelocity = Vector3i.Zero,
+                    body = new CollisionBodyState
+                    {
+                        position = Vector3i.Zero,
+                        colliderSize = PlayerSimulationConfig.ColliderSize,
+                        colliderRadius = PlayerSimulationConfig.ColliderRadius,
+                        colliderType = ColliderType.Sphere
+                    }
+                };
             }
 
             switch (input.commandType)
