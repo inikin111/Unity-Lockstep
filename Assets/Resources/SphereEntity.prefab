@@ -68,7 +68,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 4b769c41532b7044aa8a8dc509eef4c3, type: 2}
+  - {fileID: 2100000, guid: 981abf7a53e6a964fba6bc48555ec31a, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -125,9 +125,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c548439a9ca831342a2ec9065c851123, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EntityUnit
+  colliderType: 1
   colliderCenter: {x: 0, y: 0, z: 0}
-  colliderSize: {x: 0.5, y: 0.5, z: 0.5}
-  colliderRadius: 0.25
+  colliderSize: {x: 1, y: 1, z: 1}
+  colliderRadius: 0.5
   motion:
     isDynamic: 1
     dragPermille: 36
