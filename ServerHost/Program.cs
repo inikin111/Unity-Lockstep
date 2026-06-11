@@ -13,7 +13,7 @@ public static class Program
     public record PendingClient(uint ClientId, Vector3i Position);
     static Network? network;
     static uint connectedClientCount = 0;
-    const uint maxClients = 1;
+    const uint minClients = 1;
     const double fixedTimeStepSeconds = 1.0 / 30.0; // 30 ticks per second
     const uint inputDelay = 2;
     static readonly bool enableGameStateFileLog = false;
@@ -46,7 +46,7 @@ public static class Program
         );
 
         // Stage 1: Wait for clients to connect and assign client IDs
-        while (pendingConnections.Count < maxClients)
+        while (pendingConnections.Count < minClients)
         {
             while (network.TryReceivePacket()) { }
             Thread.Sleep(30);
