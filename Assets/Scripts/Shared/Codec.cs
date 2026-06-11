@@ -14,6 +14,7 @@ namespace Lockstep.Packets
         const int EntityStateLength = sizeof(uint) + CollisionBodyStateLength;
         const int EntityMotionFrameLength = sizeof(uint) + (sizeof(int) * 3);
         const int StateSyncPacketHeaderLength = sizeof(uint) + sizeof(int) * 2;
+        const int PlayerJoinPacketLength = sizeof(uint) * 2 + sizeof(int) * 3;
 
         public static byte[] PacketHeaderToBytes(PacketHeader header)
         {
@@ -334,6 +335,51 @@ namespace Lockstep.Packets
         public static InputPacket ReadInputPacketBody(byte[] bytes, int offset = PacketHeaderLength)
         {
             return BytesToInputPacket(bytes, offset);
+        }
+
+        public static byte[] PlayerJoinPacketToBytes(PlayerJoinPacket packet)
+        {
+            byte[] bytes = new byte[PlayerJoinPacketLength];
+            int offset = 0;
+
+            Buffer.BlockCopy(BitConverter.GetBytes(packet.clientId), 0, bytes, offset, sizeof(uint));
+            offset += sizeof(uint);
+            Buffer.BlockCopy(BitConverter.GetBytes(packet.joinTick), 0, bytes, offset, sizeof(uint));
+            offset += sizeof(uint);
+            Buffer.BlockCopy(BitConverter.GetBytes(packet.spawnPosition.x), 0, bytes, offset, sizeof(int));
+            offset += sizeof(int);
+            Buffer.BlockCopy(BitConverter.GetBytes(packet.spawnPosition.y), 0, bytes, offset, sizeof(int));
+            offset += sizeof(int);
+            Buffer.BlockCopy(BitConverter.GetBytes(packet.spawnPosition.z), 0, bytes, offset, sizeof(int));
+
+            return bytes;
+        }
+
+        public static PlayerJoinPacket ReadPlayerJoinPacketBody(byte[] bytes, int offset = PacketHeaderLength)
+        {
+            return BytesToPlayerJoinPacket(bytes, offset);
+        }
+
+        public static PlayerJoinPacket BytesToPlayerJoinPacket(byte[] bytes, int offset = 0)
+        {
+            if (bytes == null)
+            {
+                throw new ArgumentNullException(nameof(bytes));
+            }
+
+            EnsureAvailable(bytes, offset, PlayerJoinPacketLength, nameof(PlayerJoinPacket));
+
+            return new PlayerJoinPacket
+            {
+                clientId = BitConverter.ToUInt32(bytes, offset),
+                joinTick = BitConverter.ToUInt32(bytes, offset + sizeof(uint)),
+                spawnPosition = new Vector3i
+                {
+                    x = BitConverter.ToInt32(bytes, offset + sizeof(uint) * 2),
+                    y = BitConverter.ToInt32(bytes, offset + sizeof(uint) * 2 + sizeof(int)),
+                    z = BitConverter.ToInt32(bytes, offset + sizeof(uint) * 2 + sizeof(int) * 2)
+                }
+            };
         }
 
         public static byte[] InputPacketToBytes(InputPacket packet)

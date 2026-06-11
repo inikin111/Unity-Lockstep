@@ -17,14 +17,23 @@ public class ClientNetwork
     IPEndPoint receiveEndPoint = new IPEndPoint(IPAddress.Parse(ServerIP), ServerPort);
     Action<byte[]> onClientIdAssigned;
     Action<byte[]> onFramePacketReceived;
+    Action<byte[]> onStateSyncReceived;
+    Action<byte[]> onPlayerJoinReceived;
     CancellationTokenSource receiveCts;
     Task receiveTask;
     public ConcurrentQueue<byte[]> pendingPackets = new ConcurrentQueue<byte[]>();
 
-    public bool Initialize(Action<byte[]> onClientIdAssigned, Action<byte[]> onFramePacketReceived, Vector3i pos)
+    public bool Initialize(
+        Action<byte[]> onClientIdAssigned,
+        Action<byte[]> onFramePacketReceived,
+        Action<byte[]> onStateSyncReceived,
+        Action<byte[]> onPlayerJoinReceived,
+        Vector3i pos)
     {
         this.onClientIdAssigned = onClientIdAssigned;
         this.onFramePacketReceived = onFramePacketReceived;
+        this.onStateSyncReceived = onStateSyncReceived;
+        this.onPlayerJoinReceived = onPlayerJoinReceived;
         ConnectToServer();
         SendConnectionRequest(pos);
 
@@ -147,6 +156,12 @@ public class ClientNetwork
             case PacketType.Frame:
                 ReceiveFramePacket(data);
                 break;
+            case PacketType.StateSync:
+                ReceiveStateSyncPacket(data);
+                break;
+            case PacketType.PlayerJoin:
+                ReceivePlayerJoinPacket(data);
+                break;
             default:
                 break;
         }
@@ -162,5 +177,15 @@ public class ClientNetwork
     {
         // framePacketQueue.Enqueue(data);
         onFramePacketReceived?.Invoke(data);
+    }
+
+    void ReceiveStateSyncPacket(byte[] data)
+    {
+        onStateSyncReceived?.Invoke(data);
+    }
+
+    void ReceivePlayerJoinPacket(byte[] data)
+    {
+        onPlayerJoinReceived?.Invoke(data);
     }
 }

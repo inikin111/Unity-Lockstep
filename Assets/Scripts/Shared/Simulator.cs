@@ -169,7 +169,20 @@ public class Simulator
         {
             if (!playerStates.TryGetValue(input.clientId, out PlayerState playerState))
             {
-                playerState = new PlayerState();
+                playerState = new PlayerState
+                {
+                    clientId = input.clientId,
+                    commandType = CommandType.None,
+                    targetPosition = Vector3i.Zero,
+                    frameVelocity = Vector3i.Zero,
+                    body = new CollisionBodyState
+                    {
+                        position = Vector3i.Zero,
+                        colliderSize = PlayerSimulationConfig.ColliderSize,
+                        colliderRadius = PlayerSimulationConfig.ColliderRadius,
+                        colliderType = ColliderType.Sphere
+                    }
+                };
             }
 
             switch (input.commandType)
@@ -572,6 +585,7 @@ public class Simulator
         Vector3i normalVelocity = normal.ScaleTo(Vector3i.Dot(motion.velocity, normal));
         Vector3i tangentialVelocity = motion.velocity - normalVelocity.MultiplyByScalar(5);
         motion.velocity = tangentialVelocity + normal.ScaleTo(bounceSpeed);
+        motion.velocity = motion.velocity.ClampMagnitude(motion.maxSpeedPerTick);
     }
 
     void ResolveEntityCollision(EntityMotionRuntime motionA, EntityMotionRuntime motionB, Vector3i normal)

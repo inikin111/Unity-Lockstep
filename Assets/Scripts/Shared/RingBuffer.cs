@@ -17,10 +17,6 @@ public class RingBuffer<T>
     //        So the server ran ahead for dozens of frames, and the client only tries to get the latest frame packet every tick, which causes the error.
     public void Insert(uint index, T value)
     {
-        if (index > capacity && index < EarliestTick)
-        {
-            throw new InvalidOperationException($"Index {index} is too old. Earliest tick is {EarliestTick}.");
-        }
         latestTick = Math.Max(latestTick, index);
         uint modIndex = index % capacity;
         buffer[modIndex] = value;
@@ -41,7 +37,13 @@ public class RingBuffer<T>
     {
         get
         {
-            return Get(index);
+            try {
+                return Get(index);
+            }
+            catch (InvalidOperationException)
+            {
+                throw new ArgumentOutOfRangeException(nameof(index));
+            }
         }
         set
         {

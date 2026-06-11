@@ -49,8 +49,10 @@ public class GlobalManager : MonoSingleton<GlobalManager>
 
     void SerializeEntityData()
     {
+#if UNITY_EDITOR
         string json = JsonUtility.ToJson(entityData, true);
         string path = Application.dataPath + "/Scripts/Shared/entityData.json";
         System.IO.File.WriteAllText(path, json);
+#endif
     }
 }

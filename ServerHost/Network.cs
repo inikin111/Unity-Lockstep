@@ -30,16 +30,41 @@ public class Network
         return true;
     }
 
+    public void ReceivePacket()
+    {
+        if (server == null || server.Available <= 0)
+        {
+            return;
+        }
+
+        byte[] data = server.Receive(ref remoteEndPoint);
+
+        if (data.Length == 0)
+        {
+            return;
+        }
+        
+        PacketHeader header = PacketCodec.ReadPacketHeaderFromBytes(data);
+
+        switch (header.packetType)
+        {
+            case PacketType.ACK:
+                ReceiveConnectionRequest(data, remoteEndPoint);
+                break;
+            case PacketType.Input:
+                ReceiveInputPacket(data, remoteEndPoint);
+                break;
+            default:
+                Console.WriteLine($"Received packet with unknown type: {header.packetType} from {remoteEndPoint.Address}:{remoteEndPoint.Port}");
+                return;
+        }
+    }
+
     public bool TryReceivePacket()
     {
         if (server == null || server.Available <= 0)
         {
             return false;
-        }
-
-        if (remoteEndPoint == null)
-        {
-            remoteEndPoint = new IPEndPoint(IPAddress.Any, 0);
         }
 
         byte[] data = server.Receive(ref remoteEndPoint);
