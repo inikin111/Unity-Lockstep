@@ -10,6 +10,11 @@
 
 当前 Demo 主要关注二维平面上的移动与碰撞，不处理完整 3D 垂直运动。
 
+## 流程图导航
+
+- [服务端连接流程](./ServerHost/ConnectionFlow.md)
+- [客户端运行流程](./ClientFlow.md)
+
 ## 项目概览
 
 - Unity 版本：`6000.3.1f1`
@@ -61,6 +66,8 @@ ServerHost/
   Network.cs
   ServerHost.csproj
   ConnectionFlow.md
+
+ClientFlow.md
 
 Packages/
   manifest.json
@@ -117,7 +124,7 @@ ProjectSettings/
 - 同步推进服务端权威模拟
 - 为状态同步与补发历史帧提供基础支持
 
-[`ServerHost/ConnectionFlow.md`](./ServerHost/ConnectionFlow.md) 用 Mermaid 流程图整理了首连、运行中加入、断线重连和状态同步的主流程，更适合快速阅读和展示。
+[`ServerHost/ConnectionFlow.md`](./ServerHost/ConnectionFlow.md) 用 Mermaid 流程图整理了首连、运行中加入、断线重连和状态同步的主流程，更适合快速阅读和展示。[`ClientFlow.md`](./ClientFlow.md) 则补充了客户端从连接、收包、推进模拟到状态同步追帧的完整路径。
 
 ## 运行方式
 
@@ -197,16 +204,6 @@ GameState is stored / rendered / checksummed
 - 抽离共享逻辑为独立模块
 - 为 `PacketCodec`、`Simulator`、连接流程增加自动化测试
 - 增强多客户端调试体验和可观测性
-
-## 适合谁看
-
-如果你正在关注这些方向，这个仓库会比较有参考价值：
-
-- Unity 下的帧同步 / lockstep 实验
-- rollback 前置基础建设
-- 确定性模拟与定点数实践
-- 客户端预测之外的“服务端权威输入广播”链路设计
-- 断线重连、状态同步、补帧流程的落地拆分
 
 ## 说明
 
