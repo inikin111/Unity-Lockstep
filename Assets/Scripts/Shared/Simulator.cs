@@ -121,9 +121,9 @@ public class Simulator
 
     static void HashVector3i(ref uint checksum, Vector3i value)
     {
-        HashInt(ref checksum, value.x);
-        HashInt(ref checksum, value.y);
-        HashInt(ref checksum, value.z);
+        HashInt(ref checksum, value.RawX);
+        HashInt(ref checksum, value.RawY);
+        HashInt(ref checksum, value.RawZ);
     }
 
     static void HashUInt(ref uint checksum, uint value)
@@ -242,7 +242,7 @@ public class Simulator
             }
 
             var state = entityStates[entityId]; 
-            motion.velocity = motion.velocity.MultiplyByScalar(1000 - Clamp(motion.dragPerTick, 0, 1000)).DivideByScalar(1000);
+            motion.velocity = motion.velocity.ScaleByRawScalar(1000 - Clamp(motion.dragPerTick, 0, 1000));
             state.position += motion.velocity;
             entityStates[entityId] = state;
         }
@@ -403,12 +403,12 @@ public class Simulator
 
     bool CheckBoxShpereOverlap(CollisionBodyState box, CollisionBodyState sphere)
     {
-        Vector3i halfExtents = box.colliderSize.DivideByScalar(2);
+        Vector3i halfExtents = box.colliderSize / 2;
         Vector3i d = sphere.position - box.position;
-        int x = Clamp(d.x, -halfExtents.x, halfExtents.x);
-        int y = Clamp(d.y, -halfExtents.y, halfExtents.y);
-        int z = Clamp(d.z, -halfExtents.z, halfExtents.z);
-        Vector3i closestPoint = box.position + new Vector3i(x, y, z);
+        int x = Clamp(d.RawX, -halfExtents.RawX, halfExtents.RawX);
+        int y = Clamp(d.RawY, -halfExtents.RawY, halfExtents.RawY);
+        int z = Clamp(d.RawZ, -halfExtents.RawZ, halfExtents.RawZ);
+        Vector3i closestPoint = box.position + Vector3i.FromRaw(x, y, z);
         Vector3i delta = sphere.position - closestPoint;
 
         return delta.SquaredMagnitude() < (long)sphere.colliderRadius * sphere.colliderRadius;
@@ -422,7 +422,7 @@ public class Simulator
         }
 
         Vector3i separation = normal.ScaleTo(penetration);
-        Vector3i half = separation.DivideByScalar(2);
+        Vector3i half = separation / 2;
         stateA.position -= half;
         stateB.position += separation - half;
     }
@@ -437,7 +437,7 @@ public class Simulator
         Vector3i separation = normal.ScaleTo(penetration);
         if (entityMotionStates.TryGetValue(entityId, out var motion) && motion.isDynamic)
         {
-            Vector3i playerCorrection = separation.MultiplyByScalar(2).DivideByScalar(3);
+            Vector3i playerCorrection = separation * 2 / 3;
             Vector3i entityCorrection = separation - playerCorrection;
             player.position -= playerCorrection;
             entity.position += entityCorrection;
@@ -491,7 +491,7 @@ public class Simulator
         Vector3i separation = normal.ScaleTo(penetration);
         if (dynamicA && dynamicB)
         {
-            Vector3i half = separation.DivideByScalar(2);
+            Vector3i half = separation / 2;
             stateA.position -= half;
             stateB.position += separation - half;
             ResolveEntityCollision(motionA, motionB, normal);
@@ -523,7 +523,7 @@ public class Simulator
 
         if (distance == 0)
         {
-            normal = new Vector3i(Vector3i.Scale, 0, 0);
+            normal = Vector3i.FromRaw(Vector3i.Scale, 0, 0);
             penetration = radiusSum;
             return true;
         }
@@ -535,12 +535,12 @@ public class Simulator
 
     static bool TryGetBoxSphereCollision(CollisionBodyState box, CollisionBodyState sphere, out Vector3i normal, out int penetration)
     {
-        Vector3i halfExtents = box.colliderSize.DivideByScalar(2);
+        Vector3i halfExtents = box.colliderSize / 2;
         Vector3i localCenter = sphere.position - box.position;
-        int clampedX = Clamp(localCenter.x, -halfExtents.x, halfExtents.x);
-        int clampedY = Clamp(localCenter.y, -halfExtents.y, halfExtents.y);
-        int clampedZ = Clamp(localCenter.z, -halfExtents.z, halfExtents.z);
-        Vector3i closestPoint = box.position + new Vector3i(clampedX, clampedY, clampedZ);
+        int clampedX = Clamp(localCenter.RawX, -halfExtents.RawX, halfExtents.RawX);
+        int clampedY = Clamp(localCenter.RawY, -halfExtents.RawY, halfExtents.RawY);
+        int clampedZ = Clamp(localCenter.RawZ, -halfExtents.RawZ, halfExtents.RawZ);
+        Vector3i closestPoint = box.position + Vector3i.FromRaw(clampedX, clampedY, clampedZ);
         Vector3i delta = sphere.position - closestPoint;
         int distance = delta.Magnitude();
 
@@ -558,15 +558,15 @@ public class Simulator
             return true;
         }
 
-        int distanceToFaceX = halfExtents.x - Math.Abs(localCenter.x);
-        int distanceToFaceZ = halfExtents.z - Math.Abs(localCenter.z);
+        int distanceToFaceX = halfExtents.RawX - Math.Abs(localCenter.RawX);
+        int distanceToFaceZ = halfExtents.RawZ - Math.Abs(localCenter.RawZ);
 
-        normal = new Vector3i(localCenter.x >= 0 ? Vector3i.Scale : -Vector3i.Scale, 0, 0);
+        normal = Vector3i.FromRaw(localCenter.RawX >= 0 ? Vector3i.Scale : -Vector3i.Scale, 0, 0);
         penetration = sphere.colliderRadius + distanceToFaceX;
 
         if (distanceToFaceZ < distanceToFaceX)
         {
-            normal = new Vector3i(0, 0, localCenter.z >= 0 ? Vector3i.Scale : -Vector3i.Scale);
+            normal = Vector3i.FromRaw(0, 0, localCenter.RawZ >= 0 ? Vector3i.Scale : -Vector3i.Scale);
             penetration = sphere.colliderRadius + distanceToFaceZ;
         }
 
@@ -583,7 +583,7 @@ public class Simulator
         int transferSpeed = approachSpeed * (Vector3i.Scale + motion.bouncinessPermille) / Vector3i.Scale;
         int bounceSpeed = Math.Max(transferSpeed, motion.pushImpulsePerCollision);
         Vector3i normalVelocity = normal.ScaleTo(Vector3i.Dot(motion.velocity, normal));
-        Vector3i tangentialVelocity = motion.velocity - normalVelocity.MultiplyByScalar(5);
+        Vector3i tangentialVelocity = motion.velocity - normalVelocity * 5;
         motion.velocity = tangentialVelocity + normal.ScaleTo(bounceSpeed);
         motion.velocity = motion.velocity.ClampMagnitude(motion.maxSpeedPerTick);
     }

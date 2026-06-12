@@ -81,9 +81,9 @@ namespace Lockstep.Packets
     {
         public uint id;
         public Vector3i position;
-        public int X => position.x;
-        public int Y => position.y;
-        public int Z => position.z;
+        public int X => position.RawX;
+        public int Y => position.RawY;
+        public int Z => position.RawZ;
     }
 
     // Legacy design, just keep it for now
