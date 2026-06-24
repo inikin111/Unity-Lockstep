@@ -6,15 +6,67 @@ using System.Runtime.InteropServices;
 public partial struct Vector3i
 {
     public const int Scale = 1000;
-    public int x;
-    public int y;
-    public int z;
+    public int rawX;
+    public int rawY;
+    public int rawZ;
 
-    public Vector3i(int x, int y, int z)
+    public float x
     {
-        this.x = x;
-        this.y = y;
-        this.z = z;
+        readonly get => RawToFloat(rawX);
+        set => rawX = FloatToRaw(value);
+    }
+
+    public float y
+    {
+        readonly get => RawToFloat(rawY);
+        set => rawY = FloatToRaw(value);
+    }
+
+    public float z
+    {
+        readonly get => RawToFloat(rawZ);
+        set => rawZ = FloatToRaw(value);
+    }
+
+    public readonly int RawX => rawX;
+    public readonly int RawY => rawY;
+    public readonly int RawZ => rawZ;
+
+    public Vector3i(float x, float y, float z)
+    {
+        rawX = FloatToRaw(x);
+        rawY = FloatToRaw(y);
+        rawZ = FloatToRaw(z);
+    }
+
+    public static Vector3i FromRaw(int x, int y, int z)
+    {
+        return new Vector3i
+        {
+            rawX = x,
+            rawY = y,
+            rawZ = z
+        };
+    }
+
+    static int FloatToRaw(float value)
+    {
+        return (int)Math.Round(value * Scale, MidpointRounding.AwayFromZero);
+    }
+
+    static float RawToFloat(int value)
+    {
+        return value / (float)Scale;
+    }
+
+    static int ScalarToRaw(int scalar)
+    {
+        return (int)((long)scalar * Scale);
+    }
+
+    static int ScalarToRaw(float scalar)
+    {
+        return FloatToRaw(scalar);
     }
 
     public readonly int Magnitude()
@@ -49,11 +101,11 @@ public partial struct Vector3i
 
     public readonly long SquaredMagnitude()
     {
-        return (long) x * x + (long) y * y + (long) z * z;
+        return (long)rawX * rawX + (long)rawY * rawY + (long)rawZ * rawZ;
     }
 
-    public static Vector3i Zero => new Vector3i(0, 0, 0);
-    public static Vector3i One => new Vector3i(Scale, Scale, Scale);
+    public static Vector3i Zero => FromRaw(0, 0, 0);
+    public static Vector3i One => FromRaw(Scale, Scale, Scale);
 
     public static int Distance(Vector3i a, Vector3i b)
     {
@@ -89,12 +141,7 @@ public partial struct Vector3i
 
     public readonly Vector3i Normalize()
     {
-        int length = Magnitude();
-        if (length == 0)
-        {
-            return Zero;
-        }
-        return this * Scale / length;
+        return ScaleTo(Scale);
     }
 
     public readonly Vector3i ClampMagnitude(int maxMagnitude)
@@ -110,7 +157,7 @@ public partial struct Vector3i
             return this;
         }
 
-        return this * maxMagnitude / magnitude;
+        return ScaleTo(maxMagnitude);
     }
 
     public readonly Vector3i ScaleTo(int magnitude)
@@ -121,65 +168,83 @@ public partial struct Vector3i
             return Zero;
         }
 
-        return this * magnitude / currentMagnitude;
+        int rawScalar = (int)((long)magnitude * Scale / currentMagnitude);
+        return ScaleByRawScalar(rawScalar);
     }
 
-    public readonly Vector3i MultiplyByScalar(int scalar)
+    public readonly Vector3i ScaleByRawScalar(int rawScalar)
     {
-        return new Vector3i(
-            (int)((long)x * scalar),
-            (int)((long)y * scalar),
-            (int)((long)z * scalar));
-    }
-
-    public readonly Vector3i DivideByScalar(int scalar)
-    {
-        return new Vector3i(x / scalar, y / scalar, z / scalar);
+        return FromRaw(
+            (int)((long)rawX * rawScalar / Scale),
+            (int)((long)rawY * rawScalar / Scale),
+            (int)((long)rawZ * rawScalar / Scale));
     }
 
     public static int Dot(Vector3i a, Vector3i b)
     {
-        long sum = a.x * b.x + a.y * b. y + a.z * b.z;
+        long sum = (long)a.rawX * b.rawX + (long)a.rawY * b.rawY + (long)a.rawZ * b.rawZ;
         return (int) sum / Scale;
     }
 
     public static long DistanceSquared(Vector3i a, Vector3i b)
     {
-        long dx = (a.x - b.x) * (a.x - b.x);
-        long dy = (a.y - b.y) * (a.y - b.y);
-        long dz = (a.z - b.z) * (a.z - b.z);
-        return dx + dy + dz;
+        long dx = a.rawX - b.rawX;
+        long dy = a.rawY - b.rawY;
+        long dz = a.rawZ - b.rawZ;
+        return dx * dx + dy * dy + dz * dz;
     }
 
     public static Vector3i operator +(Vector3i a, Vector3i b)
     {
-        return new Vector3i(a.x + b.x, a.y + b.y, a.z + b.z);
+        return FromRaw(a.rawX + b.rawX, a.rawY + b.rawY, a.rawZ + b.rawZ);
     }
 
     public static Vector3i operator -(Vector3i a, Vector3i b)
     {
-        return new Vector3i(a.x - b.x, a.y - b.y, a.z - b.z);
+        return FromRaw(a.rawX - b.rawX, a.rawY - b.rawY, a.rawZ - b.rawZ);
     }
 
     public static Vector3i operator -(Vector3i a)
     {
-        return new Vector3i(-a.x, -a.y, -a.z);
+        return FromRaw(-a.rawX, -a.rawY, -a.rawZ);
     }
 
-    public static Vector3i operator *(Vector3i a, int k)
+    public static Vector3i operator *(Vector3i a, int scalar)
     {
-        return new Vector3i(
-            (int)((long)a.x * k / Scale),
-            (int)((long)a.y * k / Scale),
-            (int)((long)a.z * k / Scale));
+        return a.ScaleByRawScalar(ScalarToRaw(scalar));
     }
 
-    public static Vector3i operator /(Vector3i a, int k)
+    public static Vector3i operator *(int scalar, Vector3i a)
     {
-        return new Vector3i(
-            (int)((long)a.x * Scale / k),
-            (int)((long)a.y * Scale / k),
-            (int)((long)a.z * Scale / k));
+        return a * scalar;
+    }
+
+    public static Vector3i operator *(Vector3i a, float scalar)
+    {
+        return a.ScaleByRawScalar(ScalarToRaw(scalar));
+    }
+
+    public static Vector3i operator *(float scalar, Vector3i a)
+    {
+        return a * scalar;
+    }
+
+    public static Vector3i operator /(Vector3i a, int scalar)
+    {
+        return DivideByRawScalar(a, ScalarToRaw(scalar));
+    }
+
+    public static Vector3i operator /(Vector3i a, float scalar)
+    {
+        return DivideByRawScalar(a, ScalarToRaw(scalar));
+    }
+
+    static Vector3i DivideByRawScalar(Vector3i a, int rawScalar)
+    {
+        return FromRaw(
+            (int)((long)a.rawX * Scale / rawScalar),
+            (int)((long)a.rawY * Scale / rawScalar),
+            (int)((long)a.rawZ * Scale / rawScalar));
     }
 
     public override string ToString()

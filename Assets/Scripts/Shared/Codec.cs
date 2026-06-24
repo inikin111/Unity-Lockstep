@@ -194,11 +194,11 @@ namespace Lockstep.Packets
 
             Buffer.BlockCopy(BitConverter.GetBytes(frame.entityId), 0, bytes, offset, sizeof(uint));
             offset += sizeof(uint);
-            Buffer.BlockCopy(BitConverter.GetBytes(frame.velocity.x), 0, bytes, offset, sizeof(int));
+            Buffer.BlockCopy(BitConverter.GetBytes(frame.velocity.RawX), 0, bytes, offset, sizeof(int));
             offset += sizeof(int);
-            Buffer.BlockCopy(BitConverter.GetBytes(frame.velocity.y), 0, bytes, offset, sizeof(int));
+            Buffer.BlockCopy(BitConverter.GetBytes(frame.velocity.RawY), 0, bytes, offset, sizeof(int));
             offset += sizeof(int);
-            Buffer.BlockCopy(BitConverter.GetBytes(frame.velocity.z), 0, bytes, offset, sizeof(int));
+            Buffer.BlockCopy(BitConverter.GetBytes(frame.velocity.RawZ), 0, bytes, offset, sizeof(int));
 
             return bytes;
         }
@@ -215,12 +215,10 @@ namespace Lockstep.Packets
             return new EntityMotionFrame
             {
                 entityId = BitConverter.ToUInt32(bytes, offset),
-                velocity = new Vector3i
-                {
-                    x = BitConverter.ToInt32(bytes, offset + sizeof(uint)),
-                    y = BitConverter.ToInt32(bytes, offset + sizeof(uint) + sizeof(int)),
-                    z = BitConverter.ToInt32(bytes, offset + sizeof(uint) + sizeof(int) * 2)
-                }
+                velocity = Vector3i.FromRaw(
+                    BitConverter.ToInt32(bytes, offset + sizeof(uint)),
+                    BitConverter.ToInt32(bytes, offset + sizeof(uint) + sizeof(int)),
+                    BitConverter.ToInt32(bytes, offset + sizeof(uint) + sizeof(int) * 2))
             };
         }
 
@@ -233,17 +231,17 @@ namespace Lockstep.Packets
             offset += sizeof(uint);
             bytes[offset] = (byte)state.commandType;
             offset += sizeof(CommandType);
-            Buffer.BlockCopy(BitConverter.GetBytes(state.targetPosition.x), 0, bytes, offset, sizeof(int));
+            Buffer.BlockCopy(BitConverter.GetBytes(state.targetPosition.RawX), 0, bytes, offset, sizeof(int));
             offset += sizeof(int);
-            Buffer.BlockCopy(BitConverter.GetBytes(state.targetPosition.y), 0, bytes, offset, sizeof(int));
+            Buffer.BlockCopy(BitConverter.GetBytes(state.targetPosition.RawY), 0, bytes, offset, sizeof(int));
             offset += sizeof(int);
-            Buffer.BlockCopy(BitConverter.GetBytes(state.targetPosition.z), 0, bytes, offset, sizeof(int));
+            Buffer.BlockCopy(BitConverter.GetBytes(state.targetPosition.RawZ), 0, bytes, offset, sizeof(int));
             offset += sizeof(int);
-            Buffer.BlockCopy(BitConverter.GetBytes(state.frameVelocity.x), 0, bytes, offset, sizeof(int));
+            Buffer.BlockCopy(BitConverter.GetBytes(state.frameVelocity.RawX), 0, bytes, offset, sizeof(int));
             offset += sizeof(int);
-            Buffer.BlockCopy(BitConverter.GetBytes(state.frameVelocity.y), 0, bytes, offset, sizeof(int));
+            Buffer.BlockCopy(BitConverter.GetBytes(state.frameVelocity.RawY), 0, bytes, offset, sizeof(int));
             offset += sizeof(int);
-            Buffer.BlockCopy(BitConverter.GetBytes(state.frameVelocity.z), 0, bytes, offset, sizeof(int));
+            Buffer.BlockCopy(BitConverter.GetBytes(state.frameVelocity.RawZ), 0, bytes, offset, sizeof(int));
             offset += sizeof(int);
             byte[] bodyBytes = CollisionBodyStateToBytes(state.body);
             Buffer.BlockCopy(bodyBytes, 0, bytes, offset, bodyBytes.Length);
@@ -264,18 +262,14 @@ namespace Lockstep.Packets
             {
                 clientId = BitConverter.ToUInt32(bytes, offset),
                 commandType = (CommandType)bytes[offset + sizeof(uint)],
-                targetPosition = new Vector3i
-                {
-                    x = BitConverter.ToInt32(bytes, offset + sizeof(uint) + sizeof(CommandType)),
-                    y = BitConverter.ToInt32(bytes, offset + sizeof(uint) + sizeof(CommandType) + sizeof(int)),
-                    z = BitConverter.ToInt32(bytes, offset + sizeof(uint) + sizeof(CommandType) + sizeof(int) * 2)
-                },
-                frameVelocity = new Vector3i
-                {
-                    x = BitConverter.ToInt32(bytes, offset + sizeof(uint) + sizeof(CommandType) + sizeof(int) * 3),
-                    y = BitConverter.ToInt32(bytes, offset + sizeof(uint) + sizeof(CommandType) + sizeof(int) * 4),
-                    z = BitConverter.ToInt32(bytes, offset + sizeof(uint) + sizeof(CommandType) + sizeof(int) * 5)
-                },
+                targetPosition = Vector3i.FromRaw(
+                    BitConverter.ToInt32(bytes, offset + sizeof(uint) + sizeof(CommandType)),
+                    BitConverter.ToInt32(bytes, offset + sizeof(uint) + sizeof(CommandType) + sizeof(int)),
+                    BitConverter.ToInt32(bytes, offset + sizeof(uint) + sizeof(CommandType) + sizeof(int) * 2)),
+                frameVelocity = Vector3i.FromRaw(
+                    BitConverter.ToInt32(bytes, offset + sizeof(uint) + sizeof(CommandType) + sizeof(int) * 3),
+                    BitConverter.ToInt32(bytes, offset + sizeof(uint) + sizeof(CommandType) + sizeof(int) * 4),
+                    BitConverter.ToInt32(bytes, offset + sizeof(uint) + sizeof(CommandType) + sizeof(int) * 5)),
                 body = BytesToCollisionBodyState(bytes, offset + sizeof(uint) + sizeof(CommandType) + sizeof(int) * 6)
             };
         }
@@ -287,17 +281,17 @@ namespace Lockstep.Packets
 
             bytes[offset] = (byte)body.colliderType;
             offset += sizeof(ColliderType);
-            Buffer.BlockCopy(BitConverter.GetBytes(body.position.x), 0, bytes, offset, sizeof(int));
+            Buffer.BlockCopy(BitConverter.GetBytes(body.position.RawX), 0, bytes, offset, sizeof(int));
             offset += sizeof(int);
-            Buffer.BlockCopy(BitConverter.GetBytes(body.position.y), 0, bytes, offset, sizeof(int));
+            Buffer.BlockCopy(BitConverter.GetBytes(body.position.RawY), 0, bytes, offset, sizeof(int));
             offset += sizeof(int);
-            Buffer.BlockCopy(BitConverter.GetBytes(body.position.z), 0, bytes, offset, sizeof(int));
+            Buffer.BlockCopy(BitConverter.GetBytes(body.position.RawZ), 0, bytes, offset, sizeof(int));
             offset += sizeof(int);
-            Buffer.BlockCopy(BitConverter.GetBytes(body.colliderSize.x), 0, bytes, offset, sizeof(int));
+            Buffer.BlockCopy(BitConverter.GetBytes(body.colliderSize.RawX), 0, bytes, offset, sizeof(int));
             offset += sizeof(int);
-            Buffer.BlockCopy(BitConverter.GetBytes(body.colliderSize.y), 0, bytes, offset, sizeof(int));
+            Buffer.BlockCopy(BitConverter.GetBytes(body.colliderSize.RawY), 0, bytes, offset, sizeof(int));
             offset += sizeof(int);
-            Buffer.BlockCopy(BitConverter.GetBytes(body.colliderSize.z), 0, bytes, offset, sizeof(int));
+            Buffer.BlockCopy(BitConverter.GetBytes(body.colliderSize.RawZ), 0, bytes, offset, sizeof(int));
             offset += sizeof(int);
             Buffer.BlockCopy(BitConverter.GetBytes(body.colliderRadius), 0, bytes, offset, sizeof(int));
 
@@ -316,18 +310,14 @@ namespace Lockstep.Packets
             return new CollisionBodyState
             {
                 colliderType = (ColliderType)bytes[offset],
-                position = new Vector3i
-                {
-                    x = BitConverter.ToInt32(bytes, offset + sizeof(ColliderType)),
-                    y = BitConverter.ToInt32(bytes, offset + sizeof(ColliderType) + sizeof(int)),
-                    z = BitConverter.ToInt32(bytes, offset + sizeof(ColliderType) + sizeof(int) * 2)
-                },
-                colliderSize = new Vector3i
-                {
-                    x = BitConverter.ToInt32(bytes, offset + sizeof(ColliderType) + sizeof(int) * 3),
-                    y = BitConverter.ToInt32(bytes, offset + sizeof(ColliderType) + sizeof(int) * 4),
-                    z = BitConverter.ToInt32(bytes, offset + sizeof(ColliderType) + sizeof(int) * 5)
-                },
+                position = Vector3i.FromRaw(
+                    BitConverter.ToInt32(bytes, offset + sizeof(ColliderType)),
+                    BitConverter.ToInt32(bytes, offset + sizeof(ColliderType) + sizeof(int)),
+                    BitConverter.ToInt32(bytes, offset + sizeof(ColliderType) + sizeof(int) * 2)),
+                colliderSize = Vector3i.FromRaw(
+                    BitConverter.ToInt32(bytes, offset + sizeof(ColliderType) + sizeof(int) * 3),
+                    BitConverter.ToInt32(bytes, offset + sizeof(ColliderType) + sizeof(int) * 4),
+                    BitConverter.ToInt32(bytes, offset + sizeof(ColliderType) + sizeof(int) * 5)),
                 colliderRadius = BitConverter.ToInt32(bytes, offset + sizeof(ColliderType) + sizeof(int) * 6)
             };
         }
@@ -346,11 +336,11 @@ namespace Lockstep.Packets
             offset += sizeof(uint);
             Buffer.BlockCopy(BitConverter.GetBytes(packet.joinTick), 0, bytes, offset, sizeof(uint));
             offset += sizeof(uint);
-            Buffer.BlockCopy(BitConverter.GetBytes(packet.spawnPosition.x), 0, bytes, offset, sizeof(int));
+            Buffer.BlockCopy(BitConverter.GetBytes(packet.spawnPosition.RawX), 0, bytes, offset, sizeof(int));
             offset += sizeof(int);
-            Buffer.BlockCopy(BitConverter.GetBytes(packet.spawnPosition.y), 0, bytes, offset, sizeof(int));
+            Buffer.BlockCopy(BitConverter.GetBytes(packet.spawnPosition.RawY), 0, bytes, offset, sizeof(int));
             offset += sizeof(int);
-            Buffer.BlockCopy(BitConverter.GetBytes(packet.spawnPosition.z), 0, bytes, offset, sizeof(int));
+            Buffer.BlockCopy(BitConverter.GetBytes(packet.spawnPosition.RawZ), 0, bytes, offset, sizeof(int));
 
             return bytes;
         }
@@ -373,12 +363,10 @@ namespace Lockstep.Packets
             {
                 clientId = BitConverter.ToUInt32(bytes, offset),
                 joinTick = BitConverter.ToUInt32(bytes, offset + sizeof(uint)),
-                spawnPosition = new Vector3i
-                {
-                    x = BitConverter.ToInt32(bytes, offset + sizeof(uint) * 2),
-                    y = BitConverter.ToInt32(bytes, offset + sizeof(uint) * 2 + sizeof(int)),
-                    z = BitConverter.ToInt32(bytes, offset + sizeof(uint) * 2 + sizeof(int) * 2)
-                }
+                spawnPosition = Vector3i.FromRaw(
+                    BitConverter.ToInt32(bytes, offset + sizeof(uint) * 2),
+                    BitConverter.ToInt32(bytes, offset + sizeof(uint) * 2 + sizeof(int)),
+                    BitConverter.ToInt32(bytes, offset + sizeof(uint) * 2 + sizeof(int) * 2))
             };
         }
 
@@ -391,11 +379,11 @@ namespace Lockstep.Packets
             offset += sizeof(uint);
             Buffer.BlockCopy(BitConverter.GetBytes(packet.tick), 0, bytes, offset, sizeof(uint));
             offset += sizeof(uint);
-            Buffer.BlockCopy(BitConverter.GetBytes(packet.inputPos.x), 0, bytes, offset, sizeof(int));
+            Buffer.BlockCopy(BitConverter.GetBytes(packet.inputPos.RawX), 0, bytes, offset, sizeof(int));
             offset += sizeof(int);
-            Buffer.BlockCopy(BitConverter.GetBytes(packet.inputPos.y), 0, bytes, offset, sizeof(int));
+            Buffer.BlockCopy(BitConverter.GetBytes(packet.inputPos.RawY), 0, bytes, offset, sizeof(int));
             offset += sizeof(int);
-            Buffer.BlockCopy(BitConverter.GetBytes(packet.inputPos.z), 0, bytes, offset, sizeof(int));
+            Buffer.BlockCopy(BitConverter.GetBytes(packet.inputPos.RawZ), 0, bytes, offset, sizeof(int));
             offset += sizeof(int);
             bytes[offset] = (byte)packet.commandType;
 
@@ -418,12 +406,10 @@ namespace Lockstep.Packets
             {
                 clientId = BitConverter.ToUInt32(bytes, offset),
                 tick = BitConverter.ToUInt32(bytes, offset + sizeof(uint)),
-                inputPos = new Vector3i
-                {
-                    x = BitConverter.ToInt32(bytes, offset + sizeof(uint) * 2),
-                    y = BitConverter.ToInt32(bytes, offset + sizeof(uint) * 2 + sizeof(int)),
-                    z = BitConverter.ToInt32(bytes, offset + sizeof(uint) * 2 + sizeof(int) * 2)
-                },
+                inputPos = Vector3i.FromRaw(
+                    BitConverter.ToInt32(bytes, offset + sizeof(uint) * 2),
+                    BitConverter.ToInt32(bytes, offset + sizeof(uint) * 2 + sizeof(int)),
+                    BitConverter.ToInt32(bytes, offset + sizeof(uint) * 2 + sizeof(int) * 2)),
                 commandType = (CommandType)bytes[offset + sizeof(uint) * 2 + sizeof(int) * 3]
             };
 
@@ -473,12 +459,10 @@ namespace Lockstep.Packets
                 positions[i] = new ClientPos
                 {
                     id = BitConverter.ToUInt32(bytes, offset + ACKPacketHeaderLength + i * ClientPosLength),
-                    position = new Vector3i
-                    {
-                        x = BitConverter.ToInt32(bytes, offset + ACKPacketHeaderLength + i * ClientPosLength + sizeof(uint)),
-                        y = BitConverter.ToInt32(bytes, offset + ACKPacketHeaderLength + i * ClientPosLength + sizeof(uint) + sizeof(int)),
-                        z = BitConverter.ToInt32(bytes, offset + ACKPacketHeaderLength + i * ClientPosLength + sizeof(uint) + sizeof(int) * 2)
-                    }
+                    position = Vector3i.FromRaw(
+                        BitConverter.ToInt32(bytes, offset + ACKPacketHeaderLength + i * ClientPosLength + sizeof(uint)),
+                        BitConverter.ToInt32(bytes, offset + ACKPacketHeaderLength + i * ClientPosLength + sizeof(uint) + sizeof(int)),
+                        BitConverter.ToInt32(bytes, offset + ACKPacketHeaderLength + i * ClientPosLength + sizeof(uint) + sizeof(int) * 2))
                 };
             }
 
@@ -556,11 +540,11 @@ namespace Lockstep.Packets
             offset += sizeof(uint);
             Buffer.BlockCopy(BitConverter.GetBytes(packet.tick), 0, bytes, offset, sizeof(uint));
             offset += sizeof(uint);
-            Buffer.BlockCopy(BitConverter.GetBytes(packet.inputPos.x), 0, bytes, offset, sizeof(int));
+            Buffer.BlockCopy(BitConverter.GetBytes(packet.inputPos.RawX), 0, bytes, offset, sizeof(int));
             offset += sizeof(int);
-            Buffer.BlockCopy(BitConverter.GetBytes(packet.inputPos.y), 0, bytes, offset, sizeof(int));
+            Buffer.BlockCopy(BitConverter.GetBytes(packet.inputPos.RawY), 0, bytes, offset, sizeof(int));
             offset += sizeof(int);
-            Buffer.BlockCopy(BitConverter.GetBytes(packet.inputPos.z), 0, bytes, offset, sizeof(int));
+            Buffer.BlockCopy(BitConverter.GetBytes(packet.inputPos.RawZ), 0, bytes, offset, sizeof(int));
             offset += sizeof(int);
             bytes[offset] = (byte)packet.commandType;
         }
@@ -571,12 +555,10 @@ namespace Lockstep.Packets
             {
                 clientId = BitConverter.ToUInt32(bytes, offset),
                 tick = BitConverter.ToUInt32(bytes, offset + sizeof(uint)),
-                inputPos = new Vector3i
-                {
-                    x = BitConverter.ToInt32(bytes, offset + sizeof(uint) * 2),
-                    y = BitConverter.ToInt32(bytes, offset + sizeof(uint) * 2 + sizeof(int)),
-                    z = BitConverter.ToInt32(bytes, offset + sizeof(uint) * 2 + sizeof(int) * 2)
-                },
+                inputPos = Vector3i.FromRaw(
+                    BitConverter.ToInt32(bytes, offset + sizeof(uint) * 2),
+                    BitConverter.ToInt32(bytes, offset + sizeof(uint) * 2 + sizeof(int)),
+                    BitConverter.ToInt32(bytes, offset + sizeof(uint) * 2 + sizeof(int) * 2)),
                 commandType = (CommandType)bytes[offset + sizeof(uint) * 2 + sizeof(int) * 3]
             };
         }

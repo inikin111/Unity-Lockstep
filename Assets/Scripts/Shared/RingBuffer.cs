@@ -11,7 +11,7 @@ public class RingBuffer<T>
         buffer = new T[capacity];
     }
 
-    // Fixme : Something is wrong here. The bug might be from the network layer refractoring
+    // Fixme: Something is wrong here. The bug might be from the network layer refractoring
     //        When beginning the game, index == 22, which causes an error
     // Fixed: The bug is from the server logic. The server did't verify the tick and wait for empty tick comes.
     //        So the server ran ahead for dozens of frames, and the client only tries to get the latest frame packet every tick, which causes the error.

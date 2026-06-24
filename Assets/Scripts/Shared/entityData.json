@@ -5,14 +5,14 @@
             "body": {
                 "colliderType": 1,
                 "position": {
-                    "x": 5730,
-                    "y": 500,
-                    "z": 3730
+                    "rawX": 5730,
+                    "rawY": 500,
+                    "rawZ": 3730
                 },
                 "colliderSize": {
-                    "x": 1000,
-                    "y": 1000,
-                    "z": 1000
+                    "rawX": 1000,
+                    "rawY": 1000,
+                    "rawZ": 1000
                 },
                 "colliderRadius": 500
             }
@@ -25,11 +25,14 @@
                     "x": 3150,
                     "y": 500,
                     "z": -3220
+                    "rawX": 4450,
+                    "rawY": 500,
+                    "rawZ": 2340
                 },
                 "colliderSize": {
-                    "x": 1000,
-                    "y": 1000,
-                    "z": 1000
+                    "rawX": 1000,
+                    "rawY": 1000,
+                    "rawZ": 1000
                 },
                 "colliderRadius": 500
             }
@@ -39,14 +42,14 @@
             "body": {
                 "colliderType": 1,
                 "position": {
-                    "x": 2290,
-                    "y": 500,
-                    "z": 1250
+                    "rawX": 2290,
+                    "rawY": 500,
+                    "rawZ": 1250
                 },
                 "colliderSize": {
-                    "x": 1000,
-                    "y": 1000,
-                    "z": 1000
+                    "rawX": 1000,
+                    "rawY": 1000,
+                    "rawZ": 1000
                 },
                 "colliderRadius": 500
             }
@@ -56,14 +59,14 @@
             "body": {
                 "colliderType": 1,
                 "position": {
-                    "x": -2420,
-                    "y": 500,
-                    "z": 830
+                    "rawX": -2420,
+                    "rawY": 500,
+                    "rawZ": 830
                 },
                 "colliderSize": {
-                    "x": 1000,
-                    "y": 1000,
-                    "z": 1000
+                    "rawX": 1000,
+                    "rawY": 1000,
+                    "rawZ": 1000
                 },
                 "colliderRadius": 500
             }
@@ -73,14 +76,14 @@
             "body": {
                 "colliderType": 1,
                 "position": {
-                    "x": -2540,
-                    "y": 500,
-                    "z": 2620
+                    "rawX": -2540,
+                    "rawY": 500,
+                    "rawZ": 2620
                 },
                 "colliderSize": {
-                    "x": 1000,
-                    "y": 1000,
-                    "z": 1000
+                    "rawX": 1000,
+                    "rawY": 1000,
+                    "rawZ": 1000
                 },
                 "colliderRadius": 500
             }
@@ -90,14 +93,14 @@
             "body": {
                 "colliderType": 0,
                 "position": {
-                    "x": 1410,
-                    "y": 1500,
-                    "z": 5699
+                    "rawX": 1410,
+                    "rawY": 1500,
+                    "rawZ": 5699
                 },
                 "colliderSize": {
-                    "x": 16000,
-                    "y": 3000,
-                    "z": 500
+                    "rawX": 16000,
+                    "rawY": 3000,
+                    "rawZ": 500
                 },
                 "colliderRadius": 8000
             }
@@ -107,14 +110,14 @@
             "body": {
                 "colliderType": 0,
                 "position": {
-                    "x": 1410,
-                    "y": 1500,
-                    "z": -8020
+                    "rawX": 1410,
+                    "rawY": 1500,
+                    "rawZ": -8020
                 },
                 "colliderSize": {
-                    "x": 16000,
-                    "y": 3000,
-                    "z": 500
+                    "rawX": 16000,
+                    "rawY": 3000,
+                    "rawZ": 500
                 },
                 "colliderRadius": 8000
             }
@@ -124,14 +127,14 @@
             "body": {
                 "colliderType": 0,
                 "position": {
-                    "x": 9980,
-                    "y": 1500,
-                    "z": -970
+                    "rawX": 9980,
+                    "rawY": 1500,
+                    "rawZ": -970
                 },
                 "colliderSize": {
-                    "x": 500,
-                    "y": 3000,
-                    "z": 16000
+                    "rawX": 500,
+                    "rawY": 3000,
+                    "rawZ": 16000
                 },
                 "colliderRadius": 8000
             }
@@ -141,14 +144,14 @@
             "body": {
                 "colliderType": 0,
                 "position": {
-                    "x": -7250,
-                    "y": 1500,
-                    "z": -970
+                    "rawX": -7250,
+                    "rawY": 1500,
+                    "rawZ": -970
                 },
                 "colliderSize": {
-                    "x": 500,
-                    "y": 3000,
-                    "z": 16000
+                    "rawX": 500,
+                    "rawY": 3000,
+                    "rawZ": 16000
                 },
                 "colliderRadius": 8000
             }
@@ -158,14 +161,14 @@
             "body": {
                 "colliderType": 1,
                 "position": {
-                    "x": 650,
-                    "y": 500,
-                    "z": 770
+                    "rawX": 650,
+                    "rawY": 500,
+                    "rawZ": 770
                 },
                 "colliderSize": {
-                    "x": 1000,
-                    "y": 1000,
-                    "z": 1000
+                    "rawX": 1000,
+                    "rawY": 1000,
+                    "rawZ": 1000
                 },
                 "colliderRadius": 500
             }
@@ -175,14 +178,14 @@
             "body": {
                 "colliderType": 1,
                 "position": {
-                    "x": -2030,
-                    "y": 500,
-                    "z": -750
+                    "rawX": -2030,
+                    "rawY": 500,
+                    "rawZ": -750
                 },
                 "colliderSize": {
-                    "x": 1000,
-                    "y": 1000,
-                    "z": 1000
+                    "rawX": 1000,
+                    "rawY": 1000,
+                    "rawZ": 1000
                 },
                 "colliderRadius": 500
             }
@@ -192,14 +195,14 @@
             "body": {
                 "colliderType": 1,
                 "position": {
-                    "x": 210,
-                    "y": 500,
-                    "z": -1020
+                    "rawX": 210,
+                    "rawY": 500,
+                    "rawZ": -1020
                 },
                 "colliderSize": {
-                    "x": 1000,
-                    "y": 1000,
-                    "z": 1000
+                    "rawX": 1000,
+                    "rawY": 1000,
+                    "rawZ": 1000
                 },
                 "colliderRadius": 500
             }
@@ -209,14 +212,14 @@
             "body": {
                 "colliderType": 1,
                 "position": {
-                    "x": -5680,
-                    "y": 500,
-                    "z": -340
+                    "rawX": -5680,
+                    "rawY": 500,
+                    "rawZ": -340
                 },
                 "colliderSize": {
-                    "x": 1000,
-                    "y": 1000,
-                    "z": 1000
+                    "rawX": 1000,
+                    "rawY": 1000,
+                    "rawZ": 1000
                 },
                 "colliderRadius": 500
             }
@@ -226,14 +229,14 @@
             "body": {
                 "colliderType": 1,
                 "position": {
-                    "x": 140,
-                    "y": 500,
-                    "z": 3020
+                    "rawX": 140,
+                    "rawY": 500,
+                    "rawZ": 3020
                 },
                 "colliderSize": {
-                    "x": 1000,
-                    "y": 1000,
-                    "z": 1000
+                    "rawX": 1000,
+                    "rawY": 1000,
+                    "rawZ": 1000
                 },
                 "colliderRadius": 500
             }
@@ -243,14 +246,14 @@
             "body": {
                 "colliderType": 1,
                 "position": {
-                    "x": -3620,
-                    "y": 500,
-                    "z": 1790
+                    "rawX": -3620,
+                    "rawY": 500,
+                    "rawZ": 1790
                 },
                 "colliderSize": {
-                    "x": 1000,
-                    "y": 1000,
-                    "z": 1000
+                    "rawX": 1000,
+                    "rawY": 1000,
+                    "rawZ": 1000
                 },
                 "colliderRadius": 500
             }
@@ -260,14 +263,14 @@
             "body": {
                 "colliderType": 1,
                 "position": {
-                    "x": 2050,
-                    "y": 500,
-                    "z": 3120
+                    "rawX": 2050,
+                    "rawY": 500,
+                    "rawZ": 3120
                 },
                 "colliderSize": {
-                    "x": 1000,
-                    "y": 1000,
-                    "z": 1000
+                    "rawX": 1000,
+                    "rawY": 1000,
+                    "rawZ": 1000
                 },
                 "colliderRadius": 500
             }
@@ -277,14 +280,14 @@
             "body": {
                 "colliderType": 1,
                 "position": {
-                    "x": -3850,
-                    "y": 500,
-                    "z": 300
+                    "rawX": -3850,
+                    "rawY": 500,
+                    "rawZ": 300
                 },
                 "colliderSize": {
-                    "x": 1000,
-                    "y": 1000,
-                    "z": 1000
+                    "rawX": 1000,
+                    "rawY": 1000,
+                    "rawZ": 1000
                 },
                 "colliderRadius": 500
             }
@@ -294,14 +297,14 @@
             "body": {
                 "colliderType": 1,
                 "position": {
-                    "x": -1230,
-                    "y": 500,
-                    "z": 1800
+                    "rawX": -1230,
+                    "rawY": 500,
+                    "rawZ": 1800
                 },
                 "colliderSize": {
-                    "x": 1000,
-                    "y": 1000,
-                    "z": 1000
+                    "rawX": 1000,
+                    "rawY": 1000,
+                    "rawZ": 1000
                 },
                 "colliderRadius": 500
             }
@@ -311,14 +314,14 @@
             "body": {
                 "colliderType": 1,
                 "position": {
-                    "x": -920,
-                    "y": 500,
-                    "z": 480
+                    "rawX": -920,
+                    "rawY": 500,
+                    "rawZ": 480
                 },
                 "colliderSize": {
-                    "x": 1000,
-                    "y": 1000,
-                    "z": 1000
+                    "rawX": 1000,
+                    "rawY": 1000,
+                    "rawZ": 1000
                 },
                 "colliderRadius": 500
             }
@@ -328,14 +331,14 @@
             "body": {
                 "colliderType": 1,
                 "position": {
-                    "x": 8860,
-                    "y": 500,
-                    "z": -1220
+                    "rawX": 8860,
+                    "rawY": 500,
+                    "rawZ": -1220
                 },
                 "colliderSize": {
-                    "x": 1000,
-                    "y": 1000,
-                    "z": 1000
+                    "rawX": 1000,
+                    "rawY": 1000,
+                    "rawZ": 1000
                 },
                 "colliderRadius": 500
             }
@@ -345,14 +348,14 @@
             "body": {
                 "colliderType": 1,
                 "position": {
-                    "x": 5420,
-                    "y": 500,
-                    "z": -3700
+                    "rawX": 5420,
+                    "rawY": 500,
+                    "rawZ": -3700
                 },
                 "colliderSize": {
-                    "x": 1000,
-                    "y": 1000,
-                    "z": 1000
+                    "rawX": 1000,
+                    "rawY": 1000,
+                    "rawZ": 1000
                 },
                 "colliderRadius": 500
             }
@@ -362,14 +365,14 @@
             "body": {
                 "colliderType": 1,
                 "position": {
-                    "x": 7580,
-                    "y": 500,
-                    "z": -2610
+                    "rawX": 7580,
+                    "rawY": 500,
+                    "rawZ": -2610
                 },
                 "colliderSize": {
-                    "x": 1000,
-                    "y": 1000,
-                    "z": 1000
+                    "rawX": 1000,
+                    "rawY": 1000,
+                    "rawZ": 1000
                 },
                 "colliderRadius": 500
             }
@@ -379,14 +382,14 @@
             "body": {
                 "colliderType": 1,
                 "position": {
-                    "x": 710,
-                    "y": 500,
-                    "z": -4120
+                    "rawX": 710,
+                    "rawY": 500,
+                    "rawZ": -4120
                 },
                 "colliderSize": {
-                    "x": 1000,
-                    "y": 1000,
-                    "z": 1000
+                    "rawX": 1000,
+                    "rawY": 1000,
+                    "rawZ": 1000
                 },
                 "colliderRadius": 500
             }
@@ -396,14 +399,14 @@
             "body": {
                 "colliderType": 1,
                 "position": {
-                    "x": 590,
-                    "y": 500,
-                    "z": -2330
+                    "rawX": 590,
+                    "rawY": 500,
+                    "rawZ": -2330
                 },
                 "colliderSize": {
-                    "x": 1000,
-                    "y": 1000,
-                    "z": 1000
+                    "rawX": 1000,
+                    "rawY": 1000,
+                    "rawZ": 1000
                 },
                 "colliderRadius": 500
             }
@@ -413,14 +416,14 @@
             "body": {
                 "colliderType": 1,
                 "position": {
-                    "x": 3780,
-                    "y": 500,
-                    "z": -4180
+                    "rawX": 3780,
+                    "rawY": 500,
+                    "rawZ": -4180
                 },
                 "colliderSize": {
-                    "x": 1000,
-                    "y": 1000,
-                    "z": 1000
+                    "rawX": 1000,
+                    "rawY": 1000,
+                    "rawZ": 1000
                 },
                 "colliderRadius": 500
             }
@@ -430,14 +433,14 @@
             "body": {
                 "colliderType": 1,
                 "position": {
-                    "x": 1100,
-                    "y": 500,
-                    "z": -5700
+                    "rawX": 1100,
+                    "rawY": 500,
+                    "rawZ": -5700
                 },
                 "colliderSize": {
-                    "x": 1000,
-                    "y": 1000,
-                    "z": 1000
+                    "rawX": 1000,
+                    "rawY": 1000,
+                    "rawZ": 1000
                 },
                 "colliderRadius": 500
             }
@@ -447,14 +450,14 @@
             "body": {
                 "colliderType": 1,
                 "position": {
-                    "x": 3340,
-                    "y": 500,
-                    "z": -5970
+                    "rawX": 3340,
+                    "rawY": 500,
+                    "rawZ": -5970
                 },
                 "colliderSize": {
-                    "x": 1000,
-                    "y": 1000,
-                    "z": 1000
+                    "rawX": 1000,
+                    "rawY": 1000,
+                    "rawZ": 1000
                 },
                 "colliderRadius": 500
             }
@@ -464,14 +467,14 @@
             "body": {
                 "colliderType": 1,
                 "position": {
-                    "x": -2550,
-                    "y": 500,
-                    "z": -5290
+                    "rawX": -2550,
+                    "rawY": 500,
+                    "rawZ": -5290
                 },
                 "colliderSize": {
-                    "x": 1000,
-                    "y": 1000,
-                    "z": 1000
+                    "rawX": 1000,
+                    "rawY": 1000,
+                    "rawZ": 1000
                 },
                 "colliderRadius": 500
             }
@@ -481,14 +484,14 @@
             "body": {
                 "colliderType": 1,
                 "position": {
-                    "x": 3270,
-                    "y": 500,
-                    "z": -1930
+                    "rawX": 3270,
+                    "rawY": 500,
+                    "rawZ": -1930
                 },
                 "colliderSize": {
-                    "x": 1000,
-                    "y": 1000,
-                    "z": 1000
+                    "rawX": 1000,
+                    "rawY": 1000,
+                    "rawZ": 1000
                 },
                 "colliderRadius": 500
             }
@@ -498,14 +501,14 @@
             "body": {
                 "colliderType": 1,
                 "position": {
-                    "x": -490,
-                    "y": 500,
-                    "z": -3160
+                    "rawX": -490,
+                    "rawY": 500,
+                    "rawZ": -3160
                 },
                 "colliderSize": {
-                    "x": 1000,
-                    "y": 1000,
-                    "z": 1000
+                    "rawX": 1000,
+                    "rawY": 1000,
+                    "rawZ": 1000
                 },
                 "colliderRadius": 500
             }
@@ -515,14 +518,14 @@
             "body": {
                 "colliderType": 1,
                 "position": {
-                    "x": 5180,
-                    "y": 500,
-                    "z": -1830
+                    "rawX": 5180,
+                    "rawY": 500,
+                    "rawZ": -1830
                 },
                 "colliderSize": {
-                    "x": 1000,
-                    "y": 1000,
-                    "z": 1000
+                    "rawX": 1000,
+                    "rawY": 1000,
+                    "rawZ": 1000
                 },
                 "colliderRadius": 500
             }
@@ -532,14 +535,14 @@
             "body": {
                 "colliderType": 1,
                 "position": {
-                    "x": -720,
-                    "y": 500,
-                    "z": -4650
+                    "rawX": -720,
+                    "rawY": 500,
+                    "rawZ": -4650
                 },
                 "colliderSize": {
-                    "x": 1000,
-                    "y": 1000,
-                    "z": 1000
+                    "rawX": 1000,
+                    "rawY": 1000,
+                    "rawZ": 1000
                 },
                 "colliderRadius": 500
             }
@@ -549,14 +552,14 @@
             "body": {
                 "colliderType": 1,
                 "position": {
-                    "x": 1900,
-                    "y": 500,
-                    "z": -3150
+                    "rawX": 1900,
+                    "rawY": 500,
+                    "rawZ": -3150
                 },
                 "colliderSize": {
-                    "x": 1000,
-                    "y": 1000,
-                    "z": 1000
+                    "rawX": 1000,
+                    "rawY": 1000,
+                    "rawZ": 1000
                 },
                 "colliderRadius": 500
             }
@@ -566,48 +569,14 @@
             "body": {
                 "colliderType": 1,
                 "position": {
-                    "x": 2210,
-                    "y": 500,
-                    "z": -4470
+                    "rawX": 2210,
+                    "rawY": 500,
+                    "rawZ": -4470
                 },
                 "colliderSize": {
-                    "x": 1000,
-                    "y": 1000,
-                    "z": 1000
-                },
-                "colliderRadius": 500
-            }
-        },
-        {
-            "entityId": 34,
-            "body": {
-                "colliderType": 0,
-                "position": {
-                    "x": -3020,
-                    "y": 500,
-                    "z": -2210
-                },
-                "colliderSize": {
-                    "x": 3689,
-                    "y": 1000,
-                    "z": 322
-                },
-                "colliderRadius": 1844
-            }
-        },
-        {
-            "entityId": 35,
-            "body": {
-                "colliderType": 0,
-                "position": {
-                    "x": 7760,
-                    "y": 500,
-                    "z": 2390
-                },
-                "colliderSize": {
-                    "x": 3689,
-                    "y": 1000,
-                    "z": 322
+                    "rawX": 1000,
+                    "rawY": 1000,
+                    "rawZ": 1000
                 },
                 "colliderRadius": 1844
             }
