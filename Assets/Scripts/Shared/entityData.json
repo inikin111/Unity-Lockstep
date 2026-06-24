@@ -22,9 +22,6 @@
             "body": {
                 "colliderType": 1,
                 "position": {
-                    "x": 3150,
-                    "y": 500,
-                    "z": -3220
                     "rawX": 4450,
                     "rawY": 500,
                     "rawZ": 2340
