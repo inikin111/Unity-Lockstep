@@ -403,6 +403,13 @@ public static partial class Program
             inputsByTick[packet.tick] = tickInputs;
         }
 
+        if (packet.commandType == CommandType.None &&
+            tickInputs.TryGetValue(packet.clientId, out InputPacket cachedInput) &&
+            cachedInput.commandType != CommandType.None)
+        {
+            return;
+        }
+
         tickInputs[packet.clientId] = packet;
     }
 

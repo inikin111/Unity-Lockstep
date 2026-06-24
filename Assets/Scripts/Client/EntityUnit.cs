@@ -41,7 +41,7 @@ public class EntityUnit : MonoBehaviour
         SyncColliderSettingsInEditor();
     }
 
-    void Update()
+    void Start()
     {
         SyncColliderSettingsInEditor();
     }

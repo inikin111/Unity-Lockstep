@@ -6,6 +6,7 @@ public class UIManager : MonoSingleton<UIManager>
     uint clientId;
     [SerializeField] TextMeshProUGUI idText;
     [SerializeField] TextMeshProUGUI frameText;
+    [SerializeField] TextMeshProUGUI checksumText;
 
     void Awake()
     {
@@ -16,6 +17,10 @@ public class UIManager : MonoSingleton<UIManager>
         if (frameText == null)
         {
             Debug.LogError("Frame Text is not assigned in the inspector.");
+        }
+        if (checksumText == null)
+        {
+            Debug.LogError("Checksum Text is not assigned in the inspector.");
         }
     }
 
@@ -34,4 +39,10 @@ public class UIManager : MonoSingleton<UIManager>
     {
         frameText.text = $"Current Frame: {frame}";
     }
+
+    public void UpdateChecksum(int checksum)
+    {
+        checksumText.text = $"GameState Checksum: {checksum}";
+    }
+
 }

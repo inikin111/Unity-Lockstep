@@ -22,9 +22,9 @@
             "body": {
                 "colliderType": 1,
                 "position": {
-                    "x": 4450,
+                    "x": 3150,
                     "y": 500,
-                    "z": 2340
+                    "z": -3220
                 },
                 "colliderSize": {
                     "x": 1000,
@@ -577,12 +577,46 @@
                 },
                 "colliderRadius": 500
             }
+        },
+        {
+            "entityId": 34,
+            "body": {
+                "colliderType": 0,
+                "position": {
+                    "x": -3020,
+                    "y": 500,
+                    "z": -2210
+                },
+                "colliderSize": {
+                    "x": 3689,
+                    "y": 1000,
+                    "z": 322
+                },
+                "colliderRadius": 1844
+            }
+        },
+        {
+            "entityId": 35,
+            "body": {
+                "colliderType": 0,
+                "position": {
+                    "x": 7760,
+                    "y": 500,
+                    "z": 2390
+                },
+                "colliderSize": {
+                    "x": 3689,
+                    "y": 1000,
+                    "z": 322
+                },
+                "colliderRadius": 1844
+            }
         }
     ],
     "motionConfigs": [
         {
             "entityId": 0,
-            "isDynamic": false,
+            "isDynamic": true,
             "dragPermille": 100,
             "maxSpeedPerTick": 5000,
             "pushImpulsePerCollision": 150,
@@ -734,7 +768,7 @@
         },
         {
             "entityId": 19,
-            "isDynamic": false,
+            "isDynamic": true,
             "dragPermille": 100,
             "maxSpeedPerTick": 5000,
             "pushImpulsePerCollision": 150,
@@ -750,7 +784,7 @@
         },
         {
             "entityId": 21,
-            "isDynamic": false,
+            "isDynamic": true,
             "dragPermille": 100,
             "maxSpeedPerTick": 5000,
             "pushImpulsePerCollision": 150,
@@ -851,6 +885,22 @@
             "maxSpeedPerTick": 5000,
             "pushImpulsePerCollision": 150,
             "bouncinessPermille": 1000
+        },
+        {
+            "entityId": 34,
+            "isDynamic": false,
+            "dragPermille": 180,
+            "maxSpeedPerTick": 120,
+            "pushImpulsePerCollision": 90,
+            "bouncinessPermille": 120
+        },
+        {
+            "entityId": 35,
+            "isDynamic": false,
+            "dragPermille": 180,
+            "maxSpeedPerTick": 120,
+            "pushImpulsePerCollision": 90,
+            "bouncinessPermille": 120
         }
     ]
 }

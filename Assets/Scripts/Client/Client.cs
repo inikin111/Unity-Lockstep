@@ -25,6 +25,7 @@ public class Client : MonoSingleton<Client>
     static readonly bool EnableGameStateFileLog = false;
     double accumulatedTime = 0.0;
     uint currentFrame = 0;
+    uint updateTick = 0;
     uint clientId = 0;
     bool isConnected = false;
     bool isInitialized = false;
@@ -32,6 +33,7 @@ public class Client : MonoSingleton<Client>
 
     SortedDictionary<uint, FramePacket> pendingFrames = new SortedDictionary<uint, FramePacket>();
     SortedDictionary<uint, List<PlayerJoinPacket>> pendingJoins = new SortedDictionary<uint, List<PlayerJoinPacket>>();
+    readonly HashSet<uint> sentInputTicks = new HashSet<uint>();
 
     void Awake()
     {
@@ -71,7 +73,8 @@ public class Client : MonoSingleton<Client>
         accumulatedTime = accumulatedTime + Time.deltaTime;
 
         int simulatedTicks = 0;
-        while ((accumulatedTime >= FixedTimeStepSeconds || pendingFrames.Count > InputDelay) && simulatedTicks < MaxTicksPerUpdate)
+        bool shouldCatchUp = pendingFrames.ContainsKey(currentFrame) || pendingFrames.Count > InputDelay;
+        while ((accumulatedTime >= FixedTimeStepSeconds || shouldCatchUp) && simulatedTicks < MaxTicksPerUpdate)
         {
             if (accumulatedTime >= FixedTimeStepSeconds)
             {
@@ -83,7 +86,9 @@ public class Client : MonoSingleton<Client>
             {
                 gameRenderer.RenderFrame(simulator.gameStateHistory[currentFrame]);
                 UIManager.Instance.UpdateFrame(currentFrame);
+                UIManager.Instance.UpdateChecksum(simulator.GetGameStateChecksum(currentFrame));
                 currentFrame++;
+                CleanupSentInputTicks();
             }
 
             simulatedTicks++;
@@ -91,6 +96,8 @@ public class Client : MonoSingleton<Client>
             {
                 break;
             }
+
+            shouldCatchUp = pendingFrames.ContainsKey(currentFrame) || pendingFrames.Count > InputDelay;
         }
     }
 
@@ -102,7 +109,10 @@ public class Client : MonoSingleton<Client>
     bool Tick()
     {
         ApplyPlayerJoins(currentFrame);
-        clientNetwork.SendPacket(PacketType.Input, PacketCodec.InputPacketToBytes(CreateInputPacket()));
+        if (TryCreateInputPacket(out InputPacket inputPacket))
+        {
+            clientNetwork.SendPacket(PacketType.Input, PacketCodec.InputPacketToBytes(inputPacket));
+        }
 
         // 这里要注意下，一开始我直接跳过这个条件里的操作，后来经过Codex的探讨想到可能出现玩家重叠的情况，会导致服务端客户端差异
         if (currentFrame < InputDelay)
@@ -114,6 +124,7 @@ public class Client : MonoSingleton<Client>
             });
             LogGameState("simulate");
             currentFrame++;
+            CleanupSentInputTicks();
             return false;
         }
 
@@ -130,29 +141,45 @@ public class Client : MonoSingleton<Client>
         return true;
     }
 
-    InputPacket CreateInputPacket()
+    bool TryCreateInputPacket(out InputPacket packet)
     {
 #if UNITY_EDITOR
         Debug.Log($"[Client] Creating input packet for tick={currentFrame}...");
 #endif
+        uint targetTick = currentFrame + InputDelay;
         if (!inputManager.ReadInput(out Vector3i inputPosition))
         {
-            return new InputPacket
+            if (sentInputTicks.Contains(targetTick))
+            {
+                packet = default;
+                return false;
+            }
+
+            packet = new InputPacket
             {
                 clientId = clientId,
-                tick = currentFrame + InputDelay,
+                tick = targetTick,
                 inputPos = inputPosition,
                 commandType = CommandType.None
             };
+            sentInputTicks.Add(targetTick);
+            return true;
         }
 
-        return new InputPacket
+        packet = new InputPacket
         {
             clientId = clientId,
-            tick = currentFrame + InputDelay,
+            tick = targetTick,
             inputPos = inputPosition,
             commandType = CommandType.Move
         };
+        sentInputTicks.Add(targetTick);
+        return true;
+    }
+
+    void CleanupSentInputTicks()
+    {
+        sentInputTicks.RemoveWhere(tick => tick < currentFrame && currentFrame - tick > 64);
     }
 
     bool TryGetFramePacket(uint tick, out FramePacket framePacket)
