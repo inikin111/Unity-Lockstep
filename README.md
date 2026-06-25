@@ -81,28 +81,6 @@
 
 [`ServerHost/ConnectionFlow.md`](./ServerHost/ConnectionFlow.md) 用 Mermaid 流程图整理了首连、运行中加入、断线重连和状态同步的主流程，更适合快速阅读和展示。[`ClientFlow.md`](./ClientFlow.md) 则补充了客户端从连接、收包、推进模拟到状态同步追帧的完整路径。
 
-
-## 帧同步主流程
-
-```text
-Client reads input
-        |
-        v
-InputPacket(tick = currentTick + inputDelay)
-        |
-        v
-Server buffers inputs by tick
-        |
-        v
-Server broadcasts FramePacket(tick, all inputs)
-        |
-        v
-Client and Server both run Simulator.SimulateFrame(...)
-        |
-        v
-GameState is stored / rendered / checksummed
-```
-
 这套设计的关键点是：网络里传的是“输入”，不是“最终位置”；真正的状态由同一套确定性模拟算出来。
 
 ## 状态同步与重连基础
