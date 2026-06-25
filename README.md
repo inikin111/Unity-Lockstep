@@ -1,12 +1,11 @@
 # Unity Lockstep
 
-一个用来学习和验证帧同步思路的 Unity Demo。项目的目标不是直接做成完整游戏，而是先把 rollback / 重连 / 状态同步这些多人同步能力最依赖的底层约束搭稳：
+一个用来学习和验证帧同步思路的 Unity Demo。项目的目标不是直接做成完整游戏，以学习为用途：
 
 - 固定 tick 推进
 - 确定性模拟
-- 输入驱动而不是状态驱动
+- 帧同步为主，断线重连使用状态同步
 - 客户端与服务端共用同一套模拟逻辑
-- 为后续 checksum、追帧、回滚和断线重连预留清晰入口
 
 当前 Demo 主要关注二维平面上的移动与碰撞，不处理完整 3D 垂直运动。
 
@@ -15,16 +14,9 @@
 - [服务端连接流程](./ServerHost/ConnectionFlow.md)
 - [客户端运行流程](./ClientFlow.md)
 
-## 项目概览
+## 效果截图
 
-- Unity 版本：`6000.3.1f1`
-- 服务端框架：`.NET 8`
-- 网络协议：`UDP`
-- 模拟频率：`30 ticks/s`
-- 默认输入延迟：`2 ticks`
-- 默认服务端地址：`127.0.0.1:5478`
-
-项目现在已经打通了从客户端输入采集、服务端按 tick 汇总输入、广播帧包，到客户端/服务端共同推进模拟的主链路。
+![四客户端帧同步效果截图](./Docs/effect-screenshot.png)
 
 ## 这个项目已经做到什么
 
@@ -37,43 +29,6 @@
 - 已提供状态 checksum，方便继续做客户端/服务端分歧检测。
 - 服务端保留历史帧包，并已具备给重连客户端下发历史状态与补帧的基础能力。
 - 已支持运行中的新玩家加入和旧玩家重连的基本流程骨架。
-
-## 目录结构
-
-```text
-Assets/
-  Scenes/
-    SampleScene.unity
-  Scripts/
-    Client/
-      Client.cs
-      ClientNetwork.cs
-      GameRenderer.cs
-      InputManager.cs
-      UIManager.cs
-      ...
-    Shared/
-      Codec.cs
-      Packets.cs
-      Simulator.cs
-      Vector3i.cs
-      EntityData.cs
-      entityData.json
-      ...
-
-ServerHost/
-  Program.cs
-  Network.cs
-  ServerHost.csproj
-  ConnectionFlow.md
-
-ClientFlow.md
-
-Packages/
-  manifest.json
-ProjectSettings/
-  ProjectVersion.txt
-```
 
 ## 核心模块
 
@@ -126,29 +81,6 @@ ProjectSettings/
 
 [`ServerHost/ConnectionFlow.md`](./ServerHost/ConnectionFlow.md) 用 Mermaid 流程图整理了首连、运行中加入、断线重连和状态同步的主流程，更适合快速阅读和展示。[`ClientFlow.md`](./ClientFlow.md) 则补充了客户端从连接、收包、推进模拟到状态同步追帧的完整路径。
 
-## 运行方式
-
-### 1. 启动服务端
-
-在仓库根目录执行：
-
-```powershell
-dotnet run --project .\ServerHost\ServerHost.csproj
-```
-
-### 2. 启动 Unity 客户端
-
-- 用 Unity `6000.3.1f1` 打开项目
-- 打开 `Assets/Scenes/SampleScene.unity`
-- 进入 Play Mode
-
-### 3. 默认联机配置
-
-- 服务端地址：`127.0.0.1:5478`
-- 服务端默认最少玩家数：`1`
-- 当前更偏向本地实验 / 单机多开验证
-
-如果要进一步验证多客户端，需要按现有实现继续扩展配置与可靠性逻辑。
 
 ## 帧同步主流程
 
@@ -185,26 +117,10 @@ GameState is stored / rendered / checksummed
 
 也就是说，后续如果要继续把断线恢复做完整，主要工作已经从“推翻重做”变成“把现有能力串起来”。
 
-## 当前限制
+## 目前已知问题
 
-- 这是一个实验性质 Demo，还不是完整的联机框架。
-- UDP 丢包、乱序、重传、超时恢复还没有完全做稳。
-- `ResendFramePacket` 相关可靠性流程仍未完整闭环。
-- `StateSyncPacket` 虽然已接入主流程，但完整的状态同步策略仍可继续收敛。
-- 默认逻辑更偏单客户端 / 本地验证，多客户端边界还需要继续打磨。
-- 碰撞和运动目前主要围绕平面移动验证，不追求完整 3D 物理。
-- Unity 客户端和服务端共享同一份 `Shared` 源码，后续可以进一步拆成独立 shared assembly 或 package。
-
-## 适合继续扩展的方向
-
-- 完成丢帧检测、超时检测和重传机制
-- 把 checksum 接入自动分歧检测
-- 完整串起断线重连状态机
-- 增加追帧加速与回滚/重放能力
-- 抽离共享逻辑为独立模块
-- 为 `PacketCodec`、`Simulator`、连接流程增加自动化测试
-- 增强多客户端调试体验和可观测性
-
-## 说明
-
-这个项目更像是一块“同步系统试验田”，重点在把多人同步底层问题拆开、验证、积累，而不是快速堆出完整玩法。对想自己实现联机同步底层的人来说，它的价值在于结构清晰、演进方向明确，而且已经把最难回头补的那部分基础设施先放进来了。
+- 客户端出现 tick 差异时还没有倍速追帧。最直接的表现是 Unity Editor 暂停后，一般会和服务端出现 2-3 tick 的时间差。
+- 当前是纯 socket 通信，还没有接入更完整的网络库、可靠 UDP 层或传输框架。
+- 断线逻辑没有完整实现，目前只实现了重连同步和相关逻辑的切口。
+- 由于会保存历史 `GameState`，当场景里存在大规模物体时，内存占用会非常高。
+- 没有为大规模物体做渲染优化，实体数量变大后客户端渲染压力会快速上升。
