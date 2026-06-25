@@ -22,9 +22,9 @@
             "body": {
                 "colliderType": 1,
                 "position": {
-                    "rawX": 4450,
+                    "rawX": 3150,
                     "rawY": 500,
-                    "rawZ": 2340
+                    "rawZ": -3220
                 },
                 "colliderSize": {
                     "rawX": 1000,
@@ -574,6 +574,40 @@
                     "rawX": 1000,
                     "rawY": 1000,
                     "rawZ": 1000
+                },
+                "colliderRadius": 500
+            }
+        },
+        {
+            "entityId": 34,
+            "body": {
+                "colliderType": 0,
+                "position": {
+                    "rawX": -3020,
+                    "rawY": 500,
+                    "rawZ": -2210
+                },
+                "colliderSize": {
+                    "rawX": 3689,
+                    "rawY": 1000,
+                    "rawZ": 322
+                },
+                "colliderRadius": 1844
+            }
+        },
+        {
+            "entityId": 35,
+            "body": {
+                "colliderType": 0,
+                "position": {
+                    "rawX": 7760,
+                    "rawY": 500,
+                    "rawZ": 2390
+                },
+                "colliderSize": {
+                    "rawX": 3689,
+                    "rawY": 1000,
+                    "rawZ": 322
                 },
                 "colliderRadius": 1844
             }

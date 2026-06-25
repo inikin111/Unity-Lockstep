@@ -478,8 +478,7 @@ public static partial class Program
             json,
             new JsonSerializerOptions
             {
-                IncludeFields = true,
-                PropertyNameCaseInsensitive = true
+                IncludeFields = true
             }
         );
     }
